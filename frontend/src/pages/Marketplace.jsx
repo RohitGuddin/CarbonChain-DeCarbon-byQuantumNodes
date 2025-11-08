@@ -194,7 +194,7 @@ const Marketplace = ({ user }) => {
                   <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                     <span style="color: #64748b; font-size: 15px; font-weight: 500;">Merchant</span>
                     <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                      <span style="color: #1e293b; font-size: 15px; font-weight: 600;">EcoChain</span>
+                      <span style="color: #1e293b; font-size: 15px; font-weight: 600;">DeCarbon</span>
                       <span style="color: #94a3b8; font-size: 10px;">by QuantumNodes</span>
                     </div>
                   </div>

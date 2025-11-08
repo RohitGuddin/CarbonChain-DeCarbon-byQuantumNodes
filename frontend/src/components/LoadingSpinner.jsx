@@ -13,7 +13,7 @@ const LoadingSpinner = () => {
           </div>
         </div>
         <p className="text-lg font-medium text-gray-300">
-          Loading <span className="gradient-text font-bold">EcoChain</span>
+          Loading <span className="gradient-text font-bold">DeCarbon</span>
           <span className="text-xs text-gray-500 ml-1">by QuantumNodes</span>...
         </p>
       </div>

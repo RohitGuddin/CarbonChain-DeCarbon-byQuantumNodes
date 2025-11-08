@@ -8,8 +8,14 @@ const Login = ({ onLogin }) => {
     role: 'cultivator',
     wallet_address: ''
   });
+  const [loginData, setLoginData] = useState({
+    username: '',
+    wallet_address: ''
+  });
   const [loading, setLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     // Animate login form with staggered elements
@@ -29,9 +35,18 @@ const Login = ({ onLogin }) => {
 
   const handleDemoLogin = async (role) => {
     const demoCredentials = {
-      cultivator: { username: 'Demo Cultivator', role: 'cultivator' },
-      company: { username: 'Demo Company', role: 'company' },
-      admin: { username: 'Demo Admin', role: 'admin' }
+      cultivator: { 
+        username: 'Demo Cultivator', 
+        wallet_address: '0x1234567890abcdef1234567890abcdef12345678' 
+      },
+      company: { 
+        username: 'Demo Company', 
+        wallet_address: '0xabcdef1234567890abcdef1234567890abcdef12' 
+      },
+      admin: { 
+        username: 'Demo Admin', 
+        wallet_address: '0x9876543210fedcba9876543210fedcba98765432' 
+      }
     };
     
     const credentials = demoCredentials[role];
@@ -103,6 +118,41 @@ const Login = ({ onLogin }) => {
     });
   };
 
+  const handleLoginChange = (e) => {
+    setLoginData({
+      ...loginData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError('');
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        onLogin(data.user);
+      } else {
+        setLoginError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      setLoginError('Network error. Please try again.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   const roleOptions = [
     { value: 'cultivator', label: 'Cultivator', icon: Leaf, description: 'Plant trees and earn carbon credits', color: 'from-green-500 to-emerald-600' },
     { value: 'company', label: 'Company', icon: Building2, description: 'Buy carbon credits to offset emissions', color: 'from-blue-500 to-cyan-600' },
@@ -127,7 +177,7 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
           <h2 className="text-4xl font-bold gradient-text mb-2">
-            Welcome to EcoChain
+            Welcome to DeCarbon
           </h2>
           <p className="text-sm text-gray-400 mb-1">by QuantumNodes</p>
           <p className="mt-4 text-sm text-gray-400">
@@ -288,6 +338,78 @@ const Login = ({ onLogin }) => {
           <p className="text-xs text-gray-600">
             By registering, you agree to our terms of service and privacy policy.
           </p>
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-800" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 glass border border-gray-800 rounded-full text-gray-500">OR LOGIN</span>
+          </div>
+        </div>
+
+        {/* Login Section */}
+        <div className="mt-8">
+          <h3 className="text-xl font-bold text-gray-200 mb-6 text-center">Login to Your Account</h3>
+          <form className="space-y-6" onSubmit={handleLoginSubmit}>
+            <div>
+              <label htmlFor="login_username" className="label">
+                Registered Name
+              </label>
+              <input
+                id="login_username"
+                name="username"
+                type="text"
+                required
+                value={loginData.username}
+                onChange={handleLoginChange}
+                className="input w-full"
+                placeholder="Enter your registered name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="login_wallet" className="label">
+                Wallet Address
+              </label>
+              <input
+                id="login_wallet"
+                name="wallet_address"
+                type="text"
+                required
+                value={loginData.wallet_address}
+                onChange={handleLoginChange}
+                className="input w-full font-mono text-xs"
+                placeholder="0x..."
+              />
+              <p className="mt-1 text-xs text-gray-500">Enter the wallet address you used during registration</p>
+            </div>
+
+            {loginError && (
+              <div className="glass border border-red-500/50 bg-red-500/10 rounded-lg p-4 animate-slide-up">
+                <p className="text-sm text-red-400">{loginError}</p>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="btn btn-primary w-full py-3.5 text-base font-semibold"
+              >
+                {loginLoading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="spinner"></div>
+                    <span>Logging in...</span>
+                  </div>
+                ) : (
+                  'Login'
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

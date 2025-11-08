@@ -83,7 +83,7 @@ const Navbar = ({ user, onLogout }) => {
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-bold gradient-text">
-                EcoChain
+                DeCarbon
               </span>
               <span className="text-xs text-gray-500 -mt-1">by QuantumNodes</span>
             </div>

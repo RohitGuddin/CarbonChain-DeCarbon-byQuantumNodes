@@ -10,7 +10,7 @@ from config import Config
 from models import db, User, PlantationRequest, CarbonCredit, Transaction
 from utils import generate_tx_hash, get_next_block_number, issue_fungible_tokens, log_explorer_event
 from ai import detect_plant_type
-from invoice import generate_invoice
+from invoice import generate_invoice, generate_purchase_invoice
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -29,7 +29,7 @@ os.makedirs(Config.NFT_FOLDER, exist_ok=True)
 
 # Print API key status on startup
 print("=" * 60)
-print("🚀 EcoChain Backend Starting... (by QuantumNodes)")
+print("🚀 DeCarbon Backend Starting... (by QuantumNodes)")
 if Config.GEMINI_API_KEY:
     print(f"✅ Gemini API Key: Loaded (length: {len(Config.GEMINI_API_KEY)})")
     print("🤖 AI Analysis: ENABLED (Using real Gemini AI)")
@@ -92,20 +92,20 @@ with app.app_context():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Login with demo credentials"""
+    """Login with registered name and wallet address"""
     try:
         data = request.get_json()
         username = data.get('username')
-        role = data.get('role')
+        wallet_address = data.get('wallet_address')
         
-        if not username or not role:
-            return jsonify({'error': 'Username and role required'}), 400
+        if not username or not wallet_address:
+            return jsonify({'error': 'Username and wallet address required'}), 400
         
-        # Find user by name and role
-        user = User.query.filter_by(name=username, role=role).first()
+        # Find user by name and wallet address
+        user = User.query.filter_by(name=username, wallet_address=wallet_address).first()
         
         if not user:
-            return jsonify({'error': 'Invalid credentials'}), 401
+            return jsonify({'error': 'Invalid credentials. Please check your registered name and wallet address.'}), 401
         
         return jsonify({
             'message': 'Login successful',
@@ -543,18 +543,16 @@ def verify_payment():
         if carbon_credit.credits <= 0:
             db.session.delete(carbon_credit)
         
-        # For companies: Don't create new CarbonCredit records (they just get wallet balance)
-        # For cultivators: Create CarbonCredit records so they can sell them
-        if buyer.role == 'cultivator':
-            buyer_credit = CarbonCredit(
-                user_id=buyer.id,
-                plantation_request_id=carbon_credit.plantation_request_id,
-                credits=credits_to_buy,
-                nft_metadata=carbon_credit.nft_metadata,
-                tx_hash=tx_hash
-            )
-            db.session.add(buyer_credit)
-        # Companies don't get CarbonCredit records - they just get wallet balance updates
+        # Create CarbonCredit record for buyer (both companies and cultivators)
+        # This allows proper tracking and wallet balance calculation
+        buyer_credit = CarbonCredit(
+            user_id=buyer.id,
+            plantation_request_id=carbon_credit.plantation_request_id,
+            credits=credits_to_buy,
+            nft_metadata=carbon_credit.nft_metadata,
+            tx_hash=tx_hash
+        )
+        db.session.add(buyer_credit)
         db.session.commit()
         
         return jsonify({
@@ -566,7 +564,8 @@ def verify_payment():
             'tx_hash': tx_hash,
             'block_number': block_number,
             'payment_id': razorpay_payment_id,
-            'order_id': razorpay_order_id
+            'order_id': razorpay_order_id,
+            'buyer_credit_id': buyer_credit.id  # Include credit ID for invoice generation
         }), 200
         
     except Exception as e:
@@ -703,7 +702,7 @@ def uploaded_file(filename):
 
 @app.route('/invoice/<int:request_id>', methods=['GET'])
 def get_invoice(request_id):
-    """Generate and return PDF invoice"""
+    """Generate and return PDF invoice for plantation requests"""
     try:
         # Get plantation request
         plantation_request = PlantationRequest.query.get(request_id)
@@ -734,6 +733,41 @@ def get_invoice(request_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/invoice/purchase/<int:transaction_id>', methods=['GET'])
+def get_purchase_invoice(transaction_id):
+    """Generate and return PDF invoice for purchase transactions"""
+    try:
+        # Get transaction
+        transaction = Transaction.query.get(transaction_id)
+        if not transaction:
+            return jsonify({'error': 'Transaction not found'}), 404
+        
+        # Get buyer and seller
+        buyer = User.query.get(transaction.to_user)
+        seller = User.query.get(transaction.from_user) if transaction.from_user else None
+        
+        if not buyer:
+            return jsonify({'error': 'Buyer not found'}), 404
+        
+        # Calculate amount (100 rupees per credit)
+        amount = transaction.credits * 100
+        
+        # Generate purchase invoice
+        invoice_path = generate_purchase_invoice(
+            transaction_id=transaction_id,
+            buyer_name=buyer.name,
+            seller_name=seller.name if seller else 'System',
+            credits=transaction.credits,
+            amount=amount,
+            tx_hash=transaction.tx_hash,
+            invoice_folder=Config.INVOICE_FOLDER
+        )
+        
+        return send_file(invoice_path, as_attachment=True, download_name=f'purchase_invoice_{transaction_id}.pdf')
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/user/<int:user_id>/credits', methods=['GET'])
 def get_user_credits(user_id):
     """Get user's carbon credits and wallet balance"""
@@ -745,14 +779,8 @@ def get_user_credits(user_id):
         # Get user's carbon credits
         credits = CarbonCredit.query.filter_by(user_id=user_id).all()
         
-        # Calculate total credits based on user role
-        if user.role == 'company':
-            # For companies: Calculate credits from received transactions
-            received_transactions = Transaction.query.filter_by(to_user=user_id).all()
-            total_credits = round(sum(tx.credits for tx in received_transactions), 2)
-        else:
-            # For cultivators: Calculate credits from CarbonCredit records
-            total_credits = round(sum(credit.credits for credit in credits), 2)
+        # Calculate total credits from CarbonCredit records (works for all user types)
+        total_credits = round(sum(credit.credits for credit in credits), 2)
         
         # Get user's transactions
         transactions = Transaction.query.filter(
@@ -767,7 +795,8 @@ def get_user_credits(user_id):
                 'credits': round(float(tx.credits), 2),
                 'tx_hash': tx.tx_hash,
                 'timestamp': tx.created_at.isoformat(),
-                'other_party': tx.receiver.name if tx.from_user == user_id else tx.sender.name if tx.sender else 'System'
+                'other_party': tx.receiver.name if tx.from_user == user_id else tx.sender.name if tx.sender else 'System',
+                'transaction_id': tx.id  # Include transaction ID for invoice generation
             })
         
         return jsonify({
