@@ -116,7 +116,7 @@ def generate_invoice(request_id, user_name, plant_type, co2_removed, credits, tx
     # Signature section
     story.append(Paragraph("Digital Signature", header_style))
     signature_text = """
-    Verified by: NCCR Admin
+    Verified by: DeCarbon System
     Date: """ + datetime.now().strftime('%B %d, %Y') + """
     Digital Signature: """ + tx_hash[:16] + "..."
     

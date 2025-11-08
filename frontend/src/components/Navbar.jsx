@@ -59,17 +59,9 @@ const Navbar = ({ user, onLogout }) => {
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: Leaf },
+    { name: 'Marketplace', path: '/marketplace', icon: ShoppingCart },
     { name: 'Explorer', path: '/explorer', icon: Search },
   ];
-
-  // Add marketplace link only for company users (not admin)
-  if (user?.role !== 'admin') {
-    navItems.splice(1, 0, { name: 'Marketplace', path: '/marketplace', icon: ShoppingCart });
-  }
-
-  if (user?.role === 'admin') {
-    navItems.push({ name: 'Admin', path: '/admin', icon: User });
-  }
 
   return (
     <nav className="navbar glass border-b border-gray-800 sticky top-0 z-50 backdrop-blur-xl">

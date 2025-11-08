@@ -34,6 +34,7 @@ class CarbonCredit(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     plantation_request_id = db.Column(db.Integer, db.ForeignKey('plantation_request.id'), nullable=True)
     credits = db.Column(db.Float, nullable=False)
+    price_per_credit = db.Column(db.Float, nullable=False, default=100.0)  # Price in rupees per credit
     nft_metadata = db.Column(db.String(500), nullable=True)  # JSON string
     tx_hash = db.Column(db.String(100), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

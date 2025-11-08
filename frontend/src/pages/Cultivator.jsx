@@ -8,9 +8,13 @@ import {
   Camera, 
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  Edit,
+  X,
+  Save
 } from 'lucide-react';
-import { plantationAPI, userAPI, invoiceAPI } from '../utils/api';
+import { plantationAPI, userAPI, invoiceAPI, co2API } from '../utils/api';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
 const CultivatorDashboard = ({ user }) => {
   const [uploadData, setUploadData] = useState({
@@ -25,6 +29,11 @@ const CultivatorDashboard = ({ user }) => {
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState(null);
+  const [editingPrice, setEditingPrice] = useState(null);
+  const [priceInput, setPriceInput] = useState('');
+  const [updatingPrice, setUpdatingPrice] = useState(false);
+  const [co2Data, setCo2Data] = useState([]);
+  const [co2Loading, setCo2Loading] = useState(true);
 
   useEffect(() => {
     // Animate dashboard on mount
@@ -34,7 +43,21 @@ const CultivatorDashboard = ({ user }) => {
     );
     
     fetchUserData();
+    fetchCo2DeclineProfile();
   }, []);
+
+  const fetchCo2DeclineProfile = async () => {
+    try {
+      setCo2Loading(true);
+      const response = await co2API.getDeclineProfile();
+      setCo2Data(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching CO2 decline profile:', error);
+      setCo2Data([]);
+    } finally {
+      setCo2Loading(false);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -129,7 +152,12 @@ const CultivatorDashboard = ({ user }) => {
 
       const response = await plantationAPI.uploadRequest(formData);
       
-      setMessage(`Request uploaded successfully! AI detected: ${aiAnalysis.plant_type} (${(aiAnalysis.confidence * 100).toFixed(1)}% confidence)`);
+      // Show auto-approval/rejection message
+      if (response.data.approved) {
+        setMessage(`✅ ${response.data.message} Credits issued: ${response.data.plant_type} detected!`);
+      } else {
+        setMessage(`❌ ${response.data.message}`);
+      }
       
       setUploadData({ photo: null, co2_removed: '' });
       setAiAnalysis(null);
@@ -231,6 +259,69 @@ const CultivatorDashboard = ({ user }) => {
     }
   };
 
+  const handleSetPrice = async (creditId, currentPrice) => {
+    // Find the credit to check its status
+    const credit = requests.find(c => c.id === creditId);
+    
+    // Only allow price editing for approved credits
+    if (credit && credit.status !== 'approved') {
+      setMessage('You can only set price after your plantation request is automatically approved (Mangrove detected)');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+    
+    if (editingPrice === creditId) {
+      // Save price
+      const price = parseFloat(priceInput);
+      if (isNaN(price) || price <= 0) {
+        setMessage('Please enter a valid price greater than 0');
+        setTimeout(() => setMessage(''), 3000);
+        return;
+      }
+
+      setUpdatingPrice(true);
+      try {
+        const response = await fetch(`/api/credit/${creditId}/set-price`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            price_per_credit: price,
+            user_id: user.id
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setMessage('Price updated successfully!');
+          setTimeout(() => setMessage(''), 3000);
+          setEditingPrice(null);
+          setPriceInput('');
+          fetchUserData(); // Refresh data
+        } else {
+          setMessage(data.error || 'Failed to update price');
+          setTimeout(() => setMessage(''), 3000);
+        }
+      } catch (error) {
+        setMessage('Failed to update price');
+        setTimeout(() => setMessage(''), 3000);
+      } finally {
+        setUpdatingPrice(false);
+      }
+    } else {
+      // Start editing
+      setEditingPrice(creditId);
+      setPriceInput(currentPrice ? currentPrice.toString() : '100');
+    }
+  };
+
+  const cancelPriceEdit = () => {
+    setEditingPrice(null);
+    setPriceInput('');
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'approved':
@@ -270,10 +361,13 @@ const CultivatorDashboard = ({ user }) => {
         {/* Upload Form */}
         <div className="lg:col-span-2">
           <div className="card card-glow p-6">
-            <h2 className="text-2xl font-bold text-gray-200 mb-6 flex items-center">
+            <h2 className="text-2xl font-bold text-gray-200 mb-2 flex items-center">
               <Upload className="h-6 w-6 mr-2 text-primary-500" />
               Upload Plantation Request
             </h2>
+            <p className="text-sm text-gray-400 mb-6 ml-8">
+              📌 <strong>Auto-Approval:</strong> Only Mangrove trees are automatically approved. Other plant types will be rejected.
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Photo Upload */}
@@ -451,6 +545,9 @@ const CultivatorDashboard = ({ user }) => {
                       Credits
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price/Credit
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -469,6 +566,52 @@ const CultivatorDashboard = ({ user }) => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100 ">
                         {credit.credits}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
+                        {credit.status === 'approved' ? (
+                          editingPrice === credit.id ? (
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={priceInput}
+                                onChange={(e) => setPriceInput(e.target.value)}
+                                className="w-24 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100 text-sm focus:outline-none focus:border-green-500"
+                                placeholder="Price"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSetPrice(credit.id, credit.price_per_credit)}
+                                disabled={updatingPrice}
+                                className="p-1 text-green-500 hover:text-green-400 transition-colors"
+                                title="Save"
+                              >
+                                <Save className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={cancelPriceEdit}
+                                className="p-1 text-red-500 hover:text-red-400 transition-colors"
+                                title="Cancel"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <span>₹{credit.price_per_credit?.toFixed(2) || '100.00'}</span>
+                              <button
+                                onClick={() => handleSetPrice(credit.id, credit.price_per_credit)}
+                                className="p-1 text-gray-400 hover:text-green-400 transition-colors"
+                                title="Edit price"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-gray-500 text-sm">N/A</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(credit.status)}`}>
@@ -520,6 +663,82 @@ const CultivatorDashboard = ({ user }) => {
           </div>
         </div>
       )}
+
+      {/* CO2 Decline Profile */}
+      <div className="mt-8">
+        <div className="card card-glow p-6 hover-lift">
+          <h3 className="text-2xl font-bold text-gray-200 mb-6 flex items-center">
+            <Leaf className="h-6 w-6 mr-2 text-green-500" />
+            CO2 Decline Profile
+          </h3>
+          <p className="text-sm text-gray-400 mb-6">
+            Track the cumulative CO2 removal from the atmosphere by all cultivators over time
+          </p>
+          
+          {co2Loading ? (
+            <div className="flex justify-center py-16">
+              <div className="text-center">
+                <div className="spinner mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading CO2 data...</p>
+              </div>
+            </div>
+          ) : co2Data.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-400">No CO2 removal data available yet</p>
+              <p className="text-sm text-gray-500 mt-2">Data will appear once cultivators start uploading approved plantations</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <AreaChart data={co2Data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCo2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#9ca3af"
+                  style={{ fontSize: '12px' }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                  }}
+                />
+                <YAxis 
+                  stroke="#9ca3af"
+                  style={{ fontSize: '12px' }}
+                  label={{ value: 'CO2 Removed (tons)', angle: -90, position: 'insideLeft', style: { fill: '#9ca3af' } }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1f2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#e5e7eb'
+                  }}
+                  formatter={(value) => [`${value} tons`, 'CO2 Removed']}
+                  labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
+                />
+                <Legend 
+                  wrapperStyle={{ color: '#9ca3af' }}
+                  formatter={(value) => 'Cumulative CO2 Removed'}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="cumulative_co2" 
+                  stroke="#22c55e" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorCo2)" 
+                  name="Cumulative CO2 Removed"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

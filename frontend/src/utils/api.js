@@ -48,8 +48,6 @@ export const plantationAPI = {
       'Content-Type': 'multipart/form-data',
     },
   }),
-  getPendingRequests: () => api.get('/pending-requests'),
-  approveRequest: (requestId, data) => api.post(`/approve-request/${requestId}`, data),
 };
 
 // Marketplace API
@@ -61,6 +59,11 @@ export const marketplaceAPI = {
 // Explorer API
 export const explorerAPI = {
   getTransactions: () => api.get('/explorer'),
+};
+
+// CO2 Decline Profile API
+export const co2API = {
+  getDeclineProfile: () => api.get('/co2-decline-profile'),
 };
 
 // User API

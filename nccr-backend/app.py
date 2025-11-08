@@ -64,22 +64,13 @@ def create_demo_users():
             wallet_address='0xabcdef1234567890abcdef1234567890abcdef12'
         )
         
-        # Create demo admin
-        admin = User(
-            name='Demo Admin',
-            role='admin',
-            wallet_address='0x9876543210fedcba9876543210fedcba98765432'
-        )
-        
         db.session.add(cultivator)
         db.session.add(company)
-        db.session.add(admin)
         db.session.commit()
         
         print("✅ Demo users created successfully!")
         print("👤 Cultivator: Demo Cultivator")
         print("🏢 Company: Demo Company")
-        print("👨‍💼 Admin: Demo Admin")
         
     except Exception as e:
         print(f"Error creating demo users: {e}")
@@ -120,35 +111,6 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/admin/requests', methods=['GET'])
-def get_pending_requests():
-    """Get all pending plantation requests for admin review"""
-    try:
-        requests = PlantationRequest.query.filter_by(status='pending').all()
-        
-        requests_data = []
-        for req in requests:
-            user = User.query.get(req.user_id)
-            requests_data.append({
-                'id': req.id,
-                'user_name': user.name if user else 'Unknown',
-                'user_id': req.user_id,
-                'plant_type': req.plant_type,
-                'co2_removed': req.co2_removed,
-                'status': req.status,
-                'created_at': req.created_at.isoformat() if req.created_at else None,
-                'photo_path': req.photo_path
-            })
-        
-        return jsonify({
-            'requests': requests_data,
-            'total': len(requests_data)
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/register', methods=['POST'])
 def register():
     """Register a new user"""
@@ -161,7 +123,7 @@ def register():
         if not all([name, role, wallet_address]):
             return jsonify({'error': 'Missing required fields'}), 400
         
-        if role not in ['cultivator', 'company', 'admin']:
+        if role not in ['cultivator', 'company']:
             return jsonify({'error': 'Invalid role'}), 400
         
         # Check if wallet address already exists
@@ -291,113 +253,91 @@ def upload_request():
         import json
         data = json.loads(plantation_data)
         
+        # Get plant type from AI analysis
+        plant_type = data.get('plant_type', 'Unknown')
+        
         # Save uploaded file
         filename = secure_filename(file.filename)
         unique_filename = f"{uuid.uuid4()}_{filename}"
         file_path = os.path.join(Config.UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
         
-        # Create plantation request
+        # Calculate CO2 removed
+        co2_removed = float(data.get('area', '1.0').split()[0]) * 10  # Estimate CO2 based on area
+        
+        # Auto-approve if Mangrove, otherwise auto-reject
+        # Check if plant type is Mangrove (case-insensitive, handles variations)
+        plant_type_normalized = plant_type.lower().strip()
+        is_mangrove = plant_type_normalized == 'mangrove' or plant_type_normalized.startswith('mangrove')
+        
+        if is_mangrove:
+            status = 'approved'
+            message = 'Plantation request automatically approved! Mangrove detected by AI.'
+        else:
+            status = 'rejected'
+            message = f'Plantation request automatically rejected. Detected plant: {plant_type}. Only Mangrove trees are approved.'
+        
+        # Create plantation request with auto-determined status
         plantation_request = PlantationRequest(
             user_id=user_id,
             photo_path=file_path,
-            plant_type=data.get('plant_type', 'Unknown'),
-            co2_removed=float(data.get('area', '1.0').split()[0]) * 10,  # Estimate CO2 based on area
-            status='pending'
+            plant_type=plant_type,
+            co2_removed=co2_removed,
+            status=status
         )
         
         db.session.add(plantation_request)
+        db.session.flush()  # Flush to get the ID
+        
+        # If approved, automatically issue credits and mint NFT
+        if status == 'approved':
+            user = User.query.get(user_id)
+            if user:
+                # Issue fungible tokens and mint NFT
+                token_data = issue_fungible_tokens(
+                    user_id=user.id,
+                    credits=co2_removed,
+                    plant_type=plant_type,
+                    co2_removed=co2_removed,
+                    user_name=user.name,
+                    nft_folder=Config.NFT_FOLDER
+                )
+                
+                # Create carbon credit record with default price
+                carbon_credit = CarbonCredit(
+                    user_id=user.id,
+                    plantation_request_id=plantation_request.id,
+                    credits=co2_removed,
+                    price_per_credit=100.0,  # Default price per credit
+                    nft_metadata=token_data['nft_metadata'],
+                    tx_hash=token_data['tx_hash']
+                )
+                
+                db.session.add(carbon_credit)
+                
+                # Log transaction to explorer
+                block_number = get_next_block_number()
+                log_explorer_event(
+                    from_user=None,  # System mint
+                    to_user=user.id,
+                    credits=co2_removed,
+                    tx_hash=token_data['tx_hash'],
+                    block_number=block_number
+                )
+        
         db.session.commit()
         
         return jsonify({
-            'message': 'Plantation request uploaded successfully',
+            'message': message,
             'request_id': plantation_request.id,
-            'plant_type': data.get('plant_type', 'Unknown')
+            'plant_type': plant_type,
+            'status': status,
+            'approved': is_mangrove
         }), 201
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/approve-request/<int:request_id>', methods=['POST'])
-def approve_plantation_request(request_id):
-    """Admin approves request, mints NFT, and issues credits"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        action = data.get('action')  # 'approve' or 'reject'
-        
-        if not admin_id:
-            return jsonify({'error': 'Admin ID required'}), 400
-        
-        # Check if admin exists
-        admin = User.query.get(admin_id)
-        if not admin or admin.role != 'admin':
-            return jsonify({'error': 'Invalid admin'}), 400
-        
-        # Get plantation request
-        plantation_request = PlantationRequest.query.get(request_id)
-        if not plantation_request:
-            return jsonify({'error': 'Request not found'}), 404
-        
-        if plantation_request.status != 'pending':
-            return jsonify({'error': 'Request already processed'}), 400
-        
-        if action == 'reject':
-            plantation_request.status = 'rejected'
-            db.session.commit()
-            return jsonify({'message': 'Request rejected'}), 200
-        
-        # Approve request
-        plantation_request.status = 'approved'
-        
-        # Calculate credits (1 credit per ton of CO2)
-        credits = plantation_request.co2_removed
-        
-        # Issue fungible tokens and mint NFT
-        user = plantation_request.user
-        token_data = issue_fungible_tokens(
-            user_id=user.id,
-            credits=credits,
-            plant_type=plantation_request.plant_type,
-            co2_removed=plantation_request.co2_removed,
-            user_name=user.name,
-            nft_folder=Config.NFT_FOLDER
-        )
-        
-        # Create carbon credit record
-        carbon_credit = CarbonCredit(
-            user_id=user.id,
-            plantation_request_id=plantation_request.id,
-            credits=credits,
-            nft_metadata=token_data['nft_metadata'],
-            tx_hash=token_data['tx_hash']
-        )
-        
-        db.session.add(carbon_credit)
-        
-        # Log transaction to explorer
-        block_number = get_next_block_number()
-        transaction = Transaction(
-            from_user=None,  # Minting transaction
-            to_user=user.id,
-            credits=credits,
-            tx_hash=token_data['tx_hash'],
-            block_number=block_number
-        )
-        
-        db.session.add(transaction)
-        db.session.commit()
-        
-        return jsonify({
-            'message': 'Request approved and credits issued',
-            'credits': credits,
-            'tx_hash': token_data['tx_hash'],
-            'block_number': block_number,
-            'nft_metadata': token_data['nft_metadata']
-        }), 200
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/marketplace', methods=['GET'])
 def marketplace():
@@ -414,13 +354,17 @@ def marketplace():
             user = credit.user
             marketplace_data.append({
                 'credit_id': credit.id,
+                'seller_id': user.id,
                 'seller_name': user.name,
                 'seller_wallet': user.wallet_address,
                 'credits': round(float(credit.credits), 2),
+                'price_per_credit': round(float(credit.price_per_credit), 2),
+                'total_price': round(float(credit.credits * credit.price_per_credit), 2),
                 'plant_type': credit.plantation_request.plant_type if credit.plantation_request else 'Unknown',
                 'co2_removed': round(float(credit.plantation_request.co2_removed if credit.plantation_request else 0), 2),
                 'created_at': credit.created_at.isoformat(),
-                'nft_metadata': credit.nft_metadata
+                'nft_metadata': credit.nft_metadata,
+                'status': credit.plantation_request.status if credit.plantation_request else 'unknown'
             })
         
         return jsonify({
@@ -436,13 +380,20 @@ def create_payment_order():
     """Create Razorpay payment order"""
     try:
         data = request.get_json()
-        amount = data.get('amount')  # Amount in rupees
         credits = data.get('credits')
         buyer_id = data.get('buyer_id')
         credit_id = data.get('credit_id')
         
-        if not all([amount, credits, buyer_id, credit_id]):
+        if not all([credits, buyer_id, credit_id]):
             return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Get carbon credit to get the price per credit
+        carbon_credit = CarbonCredit.query.get(credit_id)
+        if not carbon_credit:
+            return jsonify({'error': 'Credit not found'}), 404
+        
+        # Calculate amount based on cultivator's price
+        amount = credits * carbon_credit.price_per_credit
         
         # Create Razorpay order
         order_data = {
@@ -545,10 +496,12 @@ def verify_payment():
         
         # Create CarbonCredit record for buyer (both companies and cultivators)
         # This allows proper tracking and wallet balance calculation
+        # Buyer inherits the price from the seller's credit
         buyer_credit = CarbonCredit(
             user_id=buyer.id,
             plantation_request_id=carbon_credit.plantation_request_id,
             credits=credits_to_buy,
+            price_per_credit=carbon_credit.price_per_credit,  # Inherit price from seller
             nft_metadata=carbon_credit.nft_metadata,
             tx_hash=tx_hash
         )
@@ -632,6 +585,7 @@ def buy_credits():
             user_id=buyer.id,
             plantation_request_id=carbon_credit.plantation_request_id,
             credits=credits_to_buy,
+            price_per_credit=carbon_credit.price_per_credit,  # Inherit price from seller
             nft_metadata=carbon_credit.nft_metadata,
             tx_hash=tx_hash
         )
@@ -749,8 +703,19 @@ def get_purchase_invoice(transaction_id):
         if not buyer:
             return jsonify({'error': 'Buyer not found'}), 404
         
-        # Calculate amount (100 rupees per credit)
-        amount = transaction.credits * 100
+        # Get the carbon credit to find the actual price paid
+        # Find the buyer's credit record from this transaction
+        buyer_credit = CarbonCredit.query.filter_by(
+            user_id=transaction.to_user,
+            tx_hash=transaction.tx_hash
+        ).first()
+        
+        # Calculate amount based on the price per credit at time of purchase
+        if buyer_credit:
+            amount = transaction.credits * buyer_credit.price_per_credit
+        else:
+            # Fallback to default if credit record not found
+            amount = transaction.credits * 100
         
         # Generate purchase invoice
         invoice_path = generate_purchase_invoice(
@@ -764,6 +729,59 @@ def get_purchase_invoice(transaction_id):
         )
         
         return send_file(invoice_path, as_attachment=True, download_name=f'purchase_invoice_{transaction_id}.pdf')
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/credit/<int:credit_id>/set-price', methods=['POST'])
+def set_credit_price(credit_id):
+    """Allow cultivator to set/update the price per credit for their carbon credits"""
+    try:
+        data = request.get_json()
+        price_per_credit = data.get('price_per_credit')
+        user_id = data.get('user_id')
+        
+        if not price_per_credit or price_per_credit <= 0:
+            return jsonify({'error': 'Invalid price. Price must be greater than 0'}), 400
+        
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+        
+        # Get carbon credit
+        carbon_credit = CarbonCredit.query.get(credit_id)
+        if not carbon_credit:
+            return jsonify({'error': 'Credit not found'}), 404
+        
+        # Verify that the user owns this credit
+        if carbon_credit.user_id != user_id:
+            return jsonify({'error': 'You can only set price for your own credits'}), 403
+        
+        # Verify user is a cultivator
+        user = User.query.get(user_id)
+        if not user or user.role != 'cultivator':
+            return jsonify({'error': 'Only cultivators can set credit prices'}), 403
+        
+        # Verify that the plantation request is approved (price can only be set after approval)
+        if carbon_credit.plantation_request_id:
+            plantation_request = PlantationRequest.query.get(carbon_credit.plantation_request_id)
+            if not plantation_request:
+                return jsonify({'error': 'Plantation request not found'}), 404
+            if plantation_request.status != 'approved':
+                return jsonify({'error': 'You can only set price after your plantation request is automatically approved (Mangrove detected)'}), 403
+        else:
+            # If no plantation request, allow price setting (for credits from purchases)
+            pass
+        
+        # Update price
+        carbon_credit.price_per_credit = round(float(price_per_credit), 2)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Price updated successfully',
+            'credit_id': credit_id,
+            'price_per_credit': carbon_credit.price_per_credit,
+            'total_price': round(float(carbon_credit.credits * carbon_credit.price_per_credit), 2)
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -808,6 +826,7 @@ def get_user_credits(user_id):
             'credits': [{
                 'id': credit.id,
                 'credits': round(float(credit.credits), 2),
+                'price_per_credit': round(float(credit.price_per_credit), 2),
                 'plant_type': credit.plantation_request.plant_type if credit.plantation_request else 'Unknown',
                 'created_at': credit.created_at.isoformat(),
                 'tx_hash': credit.tx_hash,
@@ -820,9 +839,52 @@ def get_user_credits(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/co2-decline-profile', methods=['GET'])
+def get_co2_decline_profile():
+    """Get CO2 removal data over time for all cultivators"""
+    try:
+        from sqlalchemy import func, extract
+        from collections import defaultdict
+        
+        # Get all approved plantation requests with their CO2 removal data
+        approved_requests = PlantationRequest.query.filter_by(status='approved').order_by(PlantationRequest.created_at).all()
+        
+        # Group CO2 removal by date
+        co2_by_date = defaultdict(float)
+        
+        for request in approved_requests:
+            # Get the date (YYYY-MM-DD format)
+            date_key = request.created_at.date().isoformat()
+            co2_by_date[date_key] += float(request.co2_removed)
+        
+        # Convert to sorted list format
+        chart_data = []
+        cumulative_co2 = 0
+        
+        # Sort by date
+        sorted_dates = sorted(co2_by_date.keys())
+        
+        for date in sorted_dates:
+            daily_co2 = co2_by_date[date]
+            cumulative_co2 += daily_co2
+            chart_data.append({
+                'date': date,
+                'co2_removed': round(daily_co2, 2),
+                'cumulative_co2': round(cumulative_co2, 2)
+            })
+        
+        return jsonify({
+            'data': chart_data,
+            'total_co2_removed': round(cumulative_co2, 2),
+            'total_days': len(chart_data)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/pending-requests', methods=['GET'])
 def get_all_pending_requests():
-    """Get all pending plantation requests (for admin)"""
+    """Get all pending plantation requests"""
     try:
         requests = PlantationRequest.query.filter_by(status='pending').all()
         

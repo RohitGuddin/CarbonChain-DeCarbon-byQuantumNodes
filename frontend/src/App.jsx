@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 // Pages
 import CultivatorDashboard from './pages/Cultivator';
-import AdminDashboard from './pages/Admin';
 import Marketplace from './pages/Marketplace';
 import Explorer from './pages/Explorer';
 import Login from './pages/Login';
@@ -63,7 +62,6 @@ function App() {
             element={
               user ? (
                 user.role === 'cultivator' ? <CultivatorDashboard user={user} /> :
-                user.role === 'admin' ? <AdminDashboard user={user} /> :
                 <Marketplace user={user} />
               ) : <Navigate to="/login" replace />
             } 
@@ -79,14 +77,7 @@ function App() {
             path="/explorer" 
             element={
               user ? <Explorer user={user} /> : 
-              <Navigate to="/login" replace />
-            } 
-          />
-          <Route 
-            path="/admin" 
-            element={
-              user && user.role === 'admin' ? <AdminDashboard user={user} /> : 
-              <Navigate to="/" replace />
+              <Explorer user={{ id: 0, name: 'Guest', role: 'company' }} />
             } 
           />
         </Routes>

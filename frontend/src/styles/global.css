@@ -181,41 +181,216 @@
   animation: fadeInScale 0.5s ease-out;
 }
 
-/* Blockchain Explorer Styles */
-.blockchain-timeline {
-  position: relative;
+/* Blockchain Explorer Styles - Chain Layout */
+.perspective-3d {
+  perspective: 2000px;
+  perspective-origin: center center;
+  transform-style: preserve-3d;
 }
 
-.blockchain-timeline::before {
+.blockchain-chain-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible; /* Changed to visible to allow tooltips */
+  padding: 40px 20px;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.3) rgba(0, 0, 0, 0.1);
+  scroll-behavior: smooth;
+  cursor: grab;
+  z-index: 1;
+}
+
+.blockchain-chain-container:active {
+  cursor: grabbing;
+}
+
+.blockchain-chain-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.blockchain-chain-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.blockchain-chain-container::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.3);
+  border-radius: 4px;
+}
+
+.blockchain-chain-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.5);
+}
+
+.blockchain-chain {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: max-content;
+  padding: 20px 0 60px 0; /* Extra bottom padding for tooltips */
+  position: relative;
+  transform-style: preserve-3d;
+  margin-bottom: 20px; /* Space before transaction details */
+}
+
+.chain-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 80px;
+  height: 120px;
+  flex-shrink: 0;
+  z-index: 1;
+  margin: 0 -10px;
+}
+
+.chain-link-line {
+  position: absolute;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, 
+    rgba(34, 197, 94, 0.2) 0%, 
+    rgba(34, 197, 94, 0.6) 30%,
+    rgba(34, 197, 94, 0.8) 50%,
+    rgba(34, 197, 94, 0.6) 70%,
+    rgba(34, 197, 94, 0.2) 100%);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.4), 
+              0 0 30px rgba(34, 197, 94, 0.2);
+  z-index: 0;
+  border-radius: 2px;
+  animation: chain-pulse 2s ease-in-out infinite;
+}
+
+@keyframes chain-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.4), 
+                0 0 30px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6), 
+                0 0 40px rgba(34, 197, 94, 0.3);
+  }
+}
+
+.chain-link-arrow {
+  position: absolute;
+  right: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 50%;
+  backdrop-filter: blur(10px);
+  z-index: 2;
+  animation: arrow-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+}
+
+@keyframes arrow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+  }
+}
+
+.block-cube-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.3s ease;
+  z-index: 1;
+  isolation: isolate; /* Create new stacking context */
+}
+
+.block-cube-3d:hover .block-tooltip {
+  opacity: 1;
+}
+
+.block-cube-inner {
+  transform-style: preserve-3d;
+  width: 100%;
+  height: 100%;
+}
+
+.block-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-front {
+  transform: translateZ(20px);
+}
+
+.block-top {
+  transform: rotateX(90deg) translateZ(20px);
+  transform-origin: top;
+}
+
+.block-right {
+  transform: rotateY(90deg) translateZ(20px);
+  transform-origin: right;
+}
+
+/* Enhanced 3D glow effect */
+.block-cube-3d::before {
   content: '';
   position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(to bottom, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0.1));
-  transform: translateX(-50%);
-}
-
-.block-card {
-  position: relative;
-  margin: 2rem 0;
+  inset: -15px;
+  background: radial-gradient(ellipse at center, rgba(34, 197, 94, 0.2) 0%, transparent 70%);
   opacity: 0;
-  transform: translateX(-100px);
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 12px;
 }
 
-.block-card.animate-in {
+.block-cube-3d:hover::before {
   opacity: 1;
-  transform: translateX(0);
 }
 
-.block-card:nth-child(even) {
-  transform: translateX(100px);
+.block-tooltip {
+  white-space: nowrap;
+  transform: translateX(-50%) translateY(-100%);
 }
 
-.block-card:nth-child(even).animate-in {
-  transform: translateX(0);
+.block-cube-3d:hover .block-tooltip {
+  opacity: 1 !important;
+}
+
+/* Transaction highlight animation */
+.transaction-highlight {
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(34, 197, 94, 0);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    transform: scale(1);
+  }
 }
 
 /* Loading spinner */
