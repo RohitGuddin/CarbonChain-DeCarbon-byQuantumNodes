@@ -1,6 +1,8 @@
-# CarbonChain Backend API
+# DeCarbon Backend API
 
-Flask-based REST API for the CarbonChain carbon credit marketplace.
+Flask-based REST API for the DeCarbon carbon credit marketplace.
+
+**Built by QuantumNodes**
 
 ## 🚀 Quick Start
 
@@ -37,7 +39,7 @@ cp env.example .env
 python run.py
 ```
 
-The API will be available at `http://localhost:5000`
+The API will be available at `http://localhost:8000`
 
 ## 🔧 Configuration
 
@@ -63,7 +65,7 @@ DATABASE_URL=postgresql://user:password@localhost/carbonchain
 
 ### Base URL
 ```
-http://localhost:5000/api
+http://localhost:8000/api
 ```
 
 ### Authentication
@@ -76,7 +78,7 @@ Content-Type: application/json
 {
   "name": "John Doe",
   "role": "cultivator",
-  "wallet_address": "0x1234567890abcdef"
+  "wallet_address": "0x1234567890abcdef1234567890abcdef12345678"
 }
 ```
 
@@ -90,73 +92,71 @@ Content-Type: application/json
 }
 ```
 
+**Note:** Only `cultivator` and `company` roles are supported. Admin role has been removed.
+
+#### Login User
+```http
+POST /login
+Content-Type: application/json
+
+{
+  "username": "John Doe",
+  "wallet_address": "0x1234567890abcdef1234567890abcdef12345678"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Login successful",
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "role": "cultivator",
+    "wallet_address": "0x1234567890abcdef1234567890abcdef12345678"
+  }
+}
+```
+
 ### Plantation Requests
 
-#### Upload Plantation Request
+#### Upload Plantation Request (Auto-Approval)
 ```http
 POST /upload-request
 Content-Type: multipart/form-data
 
-photo: [image file]
+image: [image file]
 user_id: 1
-co2_removed: 2.5
+plantation_data: {"plant_type": "Mangrove", "area": 100, ...}
 ```
 
-**Response:**
+**Response (Auto-Approved - Mangrove detected):**
 ```json
 {
-  "message": "Plantation request uploaded successfully",
+  "message": "Plantation request automatically approved! Mangrove detected by AI.",
   "request_id": 1,
-  "detected_plant": "Mangrove",
-  "confidence": 0.85,
-  "photo_path": "uploads/photo.jpg"
+  "plant_type": "Mangrove",
+  "status": "approved",
+  "approved": true
 }
 ```
 
-#### Get Pending Requests (Admin)
-```http
-GET /pending-requests
-```
-
-**Response:**
+**Response (Auto-Rejected - Non-Mangrove):**
 ```json
 {
-  "requests": [
-    {
-      "id": 1,
-      "user_name": "John Doe",
-      "user_wallet": "0x1234567890abcdef",
-      "plant_type": "Mangrove",
-      "co2_removed": 2.5,
-      "photo_path": "uploads/photo.jpg",
-      "created_at": "2024-01-01T12:00:00Z"
-    }
-  ],
-  "total_pending": 1
+  "message": "Plantation request automatically rejected. Detected plant: Oak. Only Mangrove trees are approved.",
+  "request_id": 1,
+  "plant_type": "Oak",
+  "status": "rejected",
+  "approved": false
 }
 ```
 
-#### Approve/Reject Request (Admin)
-```http
-POST /approve-request/1
-Content-Type: application/json
-
-{
-  "admin_id": 2,
-  "action": "approve"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Request approved and credits issued",
-  "credits": 2.5,
-  "tx_hash": "abc123...",
-  "block_number": 1001,
-  "nft_metadata": "{...}"
-}
-```
+**Note:** 
+- The system automatically approves requests if the AI detects "Mangrove" (case-insensitive)
+- Credits and NFTs are immediately issued for approved Mangrove requests
+- All other plant types are automatically rejected
+- Admin approval is no longer required
 
 ### Marketplace
 
@@ -171,11 +171,15 @@ GET /marketplace
   "credits": [
     {
       "credit_id": 1,
+      "seller_id": 1,
       "seller_name": "John Doe",
-      "seller_wallet": "0x1234567890abcdef",
+      "seller_wallet": "0x1234567890abcdef1234567890abcdef12345678",
       "credits": 2.5,
+      "price_per_credit": 150.0,
+      "total_price": 375.0,
       "plant_type": "Mangrove",
       "co2_removed": 2.5,
+      "status": "approved",
       "created_at": "2024-01-01T12:00:00Z",
       "nft_metadata": "{...}"
     }
@@ -183,6 +187,31 @@ GET /marketplace
   "total_credits": 1
 }
 ```
+
+#### Set Credit Price (Cultivator Only)
+```http
+POST /credit/<credit_id>/set-price
+Content-Type: application/json
+
+{
+  "price_per_credit": 150.0,
+  "user_id": 1
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Price updated successfully",
+  "credit_id": 1,
+  "price_per_credit": 150.0
+}
+```
+
+**Note:** 
+- Only cultivators who own the credit can set the price
+- Price can only be set for approved credits
+- Price is used in marketplace calculations
 
 #### Buy Credits
 ```http
@@ -239,7 +268,7 @@ GET /user/1/credits
 
 ### Blockchain Explorer
 
-#### Get All Transactions
+#### Get All Transactions (Public Access)
 ```http
 GET /explorer
 ```
@@ -263,14 +292,52 @@ GET /explorer
 }
 ```
 
-### Invoicing
+**Note:** This endpoint is publicly accessible (no authentication required)
 
-#### Download Invoice
+### CO2 Tracking
+
+#### Get CO2 Decline Profile (Public Access)
 ```http
-GET /invoice/1
+GET /co2-decline-profile
 ```
 
-**Response:** PDF file download
+**Response:**
+```json
+{
+  "data": [
+    {
+      "date": "2024-01-01",
+      "co2_removed": 2.5,
+      "cumulative_co2": 2.5
+    },
+    {
+      "date": "2024-01-02",
+      "co2_removed": 3.0,
+      "cumulative_co2": 5.5
+    }
+  ],
+  "total_co2_removed": 5.5,
+  "total_days": 2
+}
+```
+
+**Note:** This endpoint is publicly accessible (no authentication required)
+
+### Invoicing
+
+#### Download Plantation Invoice
+```http
+GET /invoice/<request_id>
+```
+
+**Response:** PDF file download for plantation request
+
+#### Download Purchase Invoice
+```http
+GET /invoice/purchase/<transaction_id>
+```
+
+**Response:** PDF file download for credit purchase transaction
 
 ## 🤖 AI Integration
 
@@ -305,12 +372,16 @@ GEMINI_API_KEY=your-api-key-here
 
 Invoices are generated using ReportLab and include:
 
-- **Header**: CarbonChain branding
+- **Header**: DeCarbon branding (by QuantumNodes)
 - **Invoice Details**: ID, date, transaction hash
 - **Cultivator Info**: Name, plant type, CO2 removed, credits
-- **Verification**: NCCR verification details
+- **Verification**: DeCarbon System verification details
 - **Digital Signature**: Transaction hash-based signature
-- **Footer**: Support information
+- **Footer**: Support information (support@decarbon.com)
+
+Two types of invoices are supported:
+1. **Plantation Invoice**: Generated when a plantation request is approved
+2. **Purchase Invoice**: Generated when credits are purchased in the marketplace
 
 ## 🗄️ Database Schema
 
@@ -346,6 +417,7 @@ CREATE TABLE carbon_credit (
     user_id INTEGER NOT NULL,
     plantation_request_id INTEGER,
     credits FLOAT NOT NULL,
+    price_per_credit FLOAT NOT NULL DEFAULT 100.0,
     nft_metadata VARCHAR(500),
     tx_hash VARCHAR(100) UNIQUE NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -388,7 +460,7 @@ pip install gunicorn
 
 2. **Run with Gunicorn:**
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
+gunicorn -w 4 -b 0.0.0.0:8000 app:app
 ```
 
 ### Using Docker
@@ -402,15 +474,15 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-EXPOSE 5000
+EXPOSE 8000
 
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
 ```
 
 2. **Build and run:**
 ```bash
-docker build -t carbonchain-backend .
-docker run -p 5000:5000 carbonchain-backend
+docker build -t decarbon-backend .
+docker run -p 8000:8000 decarbon-backend
 ```
 
 ### Environment Variables for Production
@@ -457,9 +529,9 @@ GET /health
 
 The application logs all important events:
 - User registrations
-- Plantation request uploads
-- Admin approvals
+- Plantation request uploads (with auto-approval/rejection)
 - Credit purchases
+- Price updates
 - API errors
 
 ## 🔧 Troubleshooting

@@ -1,43 +1,44 @@
-# CarbonChain - Carbon Credit Marketplace Platform
+# DeCarbon - Carbon Credit Marketplace Platform
 
-A comprehensive blockchain-inspired carbon credit marketplace platform that enables cultivators to earn carbon credits through verified plantation activities, and companies to purchase these credits to offset their carbon footprint.
+A comprehensive blockchain-inspired carbon credit marketplace platform that enables cultivators to earn carbon credits through AI-verified plantation activities, and companies to purchase these credits to offset their carbon footprint.
+
+**Built by QuantumNodes**
 
 ## 🌟 Overview
 
-CarbonChain is a full-stack application that combines AI-powered plant detection, blockchain-like transaction tracking, and a marketplace for trading carbon credits. The platform supports three user roles: **Cultivators**, **Companies**, and **Admins**, each with specific functionalities.
+DeCarbon is a full-stack application that combines AI-powered plant detection, blockchain-like transaction tracking, and a marketplace for trading carbon credits. The platform features automatic approval for Mangrove plantations, real-time CO2 tracking, and an interactive 3D blockchain explorer.
 
 ## ✨ Features
 
 ### Core Features
 - **AI-Powered Plant Detection**: Automatically identifies plant types from uploaded images using Google Gemini Vision API
-- **Carbon Credit Marketplace**: Buy and sell carbon credits with integrated payment processing
-- **Blockchain Explorer**: View all transactions in a blockchain-like interface
-- **Role-Based Access Control**: Separate dashboards for Cultivators, Companies, and Admins
-- **PDF Invoice Generation**: Automated invoice generation for approved plantation requests
+- **Automatic Approval System**: Mangrove trees are automatically approved; other plant types are rejected
+- **Carbon Credit Marketplace**: Buy and sell carbon credits with dynamic pricing set by cultivators
+- **3D Blockchain Explorer**: Interactive 3D chain visualization with clickable blocks
+- **CO2 Decline Profile**: Real-time tracking of cumulative CO2 removal from the atmosphere
+- **PDF Invoice Generation**: Automated invoice generation for approved plantations and purchases
 - **Real-time Transaction Tracking**: Monitor all credit transfers and minting operations
 - **Geotagging Support**: Extract location data from uploaded images (EXIF data)
+- **Public Access**: View blockchain explorer and CO2 graphs without login
 
 ### User Roles
 
 #### 👨‍🌾 Cultivator
 - Upload plantation photos with geotagging
 - Get AI-powered plant type detection
-- Submit plantation requests for verification
-- Earn carbon credits upon admin approval
+- Automatic approval for Mangrove trees
+- Earn carbon credits upon approval
+- Set custom prices for approved credits
 - View wallet balance and transaction history
 - Download PDF invoices
+- Access marketplace to set credit prices
 
 #### 🏢 Company
 - Browse available carbon credits in the marketplace
 - Purchase credits using Razorpay payment gateway
 - View purchased credits and transaction history
 - Track carbon offset progress
-
-#### 👨‍💼 Admin
-- Review pending plantation requests
-- Approve or reject cultivation requests
-- Mint carbon credits and NFTs for approved requests
-- View all platform transactions
+- View CO2 decline profile
 
 ## 🏗️ Project Structure
 
@@ -56,9 +57,13 @@ ECHOCHAIN2/
 ├── frontend/              # React web application
 │   ├── src/
 │   │   ├── pages/         # Page components
-│   │   ├── components/   # Reusable components
+│   │   │   ├── Login.jsx      # Login/Registration page
+│   │   │   ├── Cultivator.jsx # Cultivator dashboard
+│   │   │   ├── Marketplace.jsx # Company marketplace
+│   │   │   └── Explorer.jsx     # Blockchain explorer
+│   │   ├── components/     # Reusable components
 │   │   ├── utils/         # API client & utilities
-│   │   └── styles/        # Global styles
+│   │   └── styles/         # Global styles
 │   ├── package.json
 │   └── README.md          # Frontend documentation
 │
@@ -220,17 +225,16 @@ http://localhost:8000
 ### Key Endpoints
 
 #### Authentication
-- `POST /login` - User login
-- `POST /register` - User registration
+- `POST /login` - User login (requires username and wallet_address)
+- `POST /register` - User registration (cultivator or company)
 
 #### Plantation Requests
 - `POST /analyze-plantation` - AI analysis of plantation image
-- `POST /upload-request` - Upload plantation request
-- `GET /pending-requests` - Get pending requests (Admin)
-- `POST /approve-request/<id>` - Approve/reject request (Admin)
+- `POST /upload-request` - Upload plantation request (auto-approves Mangrove, rejects others)
 
 #### Marketplace
-- `GET /marketplace` - List available credits
+- `GET /marketplace` - List available credits with pricing
+- `POST /credit/<id>/set-price` - Set price for cultivator's approved credits
 - `POST /create-payment-order` - Create Razorpay order
 - `POST /verify-payment` - Verify payment and transfer credits
 - `POST /buy-credits` - Buy credits (alternative method)
@@ -239,10 +243,14 @@ http://localhost:8000
 - `GET /user/<id>/credits` - Get user credits and wallet balance
 
 #### Blockchain Explorer
-- `GET /explorer` - Get all transactions
+- `GET /explorer` - Get all transactions (publicly accessible)
+
+#### CO2 Tracking
+- `GET /co2-decline-profile` - Get CO2 removal data over time (publicly accessible)
 
 #### Invoicing
-- `GET /invoice/<request_id>` - Download PDF invoice
+- `GET /invoice/<request_id>` - Download PDF invoice for plantation
+- `GET /invoice/purchase/<transaction_id>` - Download PDF invoice for purchase
 
 For detailed API documentation, see [nccr-backend/README.md](nccr-backend/README.md)
 
@@ -262,7 +270,9 @@ For detailed API documentation, see [nccr-backend/README.md](nccr-backend/README
 - **React Router** - Routing
 - **Axios** - HTTP client
 - **TailwindCSS** - Styling
-- **Recharts** - Data visualization
+- **Recharts** - Data visualization (CO2 graphs)
+- **GSAP** - Advanced animations
+- **Lucide React** - Icon library
 
 ### Mobile
 - **React Native** - Mobile framework
@@ -275,7 +285,7 @@ The application uses the following main models:
 
 - **User**: Stores user information (name, role, wallet_address)
 - **PlantationRequest**: Tracks cultivation requests (status, plant_type, co2_removed)
-- **CarbonCredit**: Manages carbon credits (credits, nft_metadata, tx_hash)
+- **CarbonCredit**: Manages carbon credits (credits, price_per_credit, nft_metadata, tx_hash)
 - **Transaction**: Records all blockchain-like transactions (from_user, to_user, credits, block_number)
 
 ## 🔐 Security Features
@@ -287,13 +297,43 @@ The application uses the following main models:
 - Secure file handling with Werkzeug
 - Environment variable management
 
+## 🎯 Key Features Explained
+
+### Automatic Approval System
+- When a cultivator uploads a plantation photo, the AI analyzes it
+- If the detected plant type is **Mangrove**, the request is automatically approved
+- Credits are immediately issued and an NFT is minted
+- Other plant types are automatically rejected
+
+### Dynamic Pricing
+- Cultivators can set custom prices for their approved carbon credits
+- Prices can only be set after approval (Mangrove detection)
+- Prices are used in marketplace calculations
+- Buyers pay based on the seller's set price per credit
+
+### 3D Blockchain Explorer
+- Interactive 3D cube visualization of blockchain blocks
+- Horizontal scrollable chain layout
+- Click blocks to view detailed transaction information
+- Smooth animations and hover effects
+
+### CO2 Decline Profile
+- Real-time graph showing cumulative CO2 removal over time
+- Available on both cultivator and company dashboards
+- Publicly accessible from login page
+- Area chart with gradient visualization
+
 ## 🧪 Demo Users
 
 The application creates demo users on first run:
 
-- **Cultivator**: `Demo Cultivator`
-- **Company**: `Demo Company`
-- **Admin**: `Demo Admin`
+- **Cultivator**: 
+  - Name: `Demo Cultivator`
+  - Wallet: `0x1234567890abcdef1234567890abcdef12345678`
+  
+- **Company**: 
+  - Name: `Demo Company`
+  - Wallet: `0xabcdef1234567890abcdef1234567890abcdef12`
 
 Use these for testing the application.
 
@@ -333,6 +373,10 @@ Scan the QR code with Expo Go app on your device.
    - Change port in `run.py` (default: 8000)
    - Or stop the process using the port
 
+4. **Module Not Found Errors**
+   - Ensure all dependencies are installed: `pip install -r requirements.txt`
+   - Common missing packages: `setuptools`, `reportlab`
+
 ### Frontend Issues
 
 1. **API Connection Failed**
@@ -342,6 +386,9 @@ Scan the QR code with Expo Go app on your device.
 2. **Build Errors**
    - Clear `node_modules` and reinstall: `rm -rf node_modules && npm install`
    - Check Node.js version (requires 16+)
+
+3. **Chart Not Displaying**
+   - Ensure `recharts` is installed: `npm install recharts`
 
 ## 🚢 Deployment
 
@@ -382,4 +429,4 @@ For issues and questions, please open an issue on the repository.
 
 ---
 
-**Built with ❤️ for a sustainable future**
+**Built with ❤️ by QuantumNodes for a sustainable future**
