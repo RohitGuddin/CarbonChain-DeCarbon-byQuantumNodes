@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarbonChain Mobile</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="container">
+                <div class="header">
+                    <i class="fas fa-leaf logo"></i>
+                    <h1>CarbonChain</h1>
+                    <p>Join the carbon credit marketplace</p>
+                </div>
+                
+                <div class="demo-login-section">
+                    <h3>🎯 Demo Login</h3>
+                    <div class="demo-buttons">
+                        <button class="btn btn-secondary" onclick="demoLogin('cultivator')">
+                            <i class="fas fa-seedling"></i>
+                            Cultivator
+                        </button>
+                        <button class="btn btn-secondary" onclick="demoLogin('company')">
+                            <i class="fas fa-building"></i>
+                            Company
+                        </button>
+                        <button class="btn btn-secondary" onclick="demoLogin('admin')">
+                            <i class="fas fa-user-shield"></i>
+                            Admin
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+                
+                <form id="login-form" class="form">
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" placeholder="Username" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="email" placeholder="Email" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" id="location" placeholder="Location" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Get Started
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Screen -->
+        <div id="upload-screen" class="screen">
+            <div class="container">
+                <div class="header">
+                    <i class="fas fa-leaf logo"></i>
+                    <h1>Upload Plantation</h1>
+                    <p>Upload photos of your plantation for verification</p>
+                </div>
+                
+                <div class="upload-area" id="upload-area">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <p>Upload a <strong>geotagged photo</strong> of your plantation</p>
+                    <p class="upload-note">📍 Make sure location services are enabled when taking photos</p>
+                    <div class="upload-buttons">
+                        <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">
+                            <i class="fas fa-images"></i>
+                            Gallery
+                        </button>
+                        <button class="btn btn-secondary" onclick="takePhoto()">
+                            <i class="fas fa-camera"></i>
+                            Camera
+                        </button>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;">
+                </div>
+                
+                <div id="image-preview" class="image-preview" style="display: none;">
+                    <img id="preview-img" src="" alt="Preview">
+                    <button class="btn btn-danger" onclick="removeImage()">
+                        <i class="fas fa-trash"></i>
+                        Remove
+                    </button>
+                </div>
+                
+                <!-- AI Analysis Loading -->
+                <div id="ai-analysis" class="ai-analysis" style="display: none;">
+                    <div class="loading-spinner">
+                        <i class="fas fa-brain"></i>
+                        <h3>AI Analysis in Progress...</h3>
+                        <p>Extracting data from your geotagged photo</p>
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                
+                <!-- Auto-filled Details -->
+                <div id="auto-details" class="auto-details" style="display: none;">
+                    <h3>📊 Extracted Plantation Data</h3>
+                    <div class="detail-card">
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div class="detail-content">
+                                <label>Location</label>
+                                <span id="auto-location">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-ruler"></i>
+                            <div class="detail-content">
+                                <label>Estimated Area</label>
+                                <span id="auto-area">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-leaf"></i>
+                            <div class="detail-content">
+                                <label>Plant Type</label>
+                                <span id="auto-plant-type">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar"></i>
+                            <div class="detail-content">
+                                <label>Planting Date</label>
+                                <span id="auto-planting-date">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-chart-line"></i>
+                            <div class="detail-content">
+                                <label>Growth Stage</label>
+                                <span id="auto-growth-stage">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-brain"></i>
+                            <div class="detail-content">
+                                <label>AI Confidence</label>
+                                <span id="auto-confidence">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" onclick="submitPlantationRequest()">
+                        <i class="fas fa-check-circle"></i>
+                        Submit Plantation Request
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Screen -->
+        <div id="admin-screen" class="screen">
+            <div class="container">
+                <div class="header">
+                    <i class="fas fa-user-shield logo"></i>
+                    <h1>Admin Dashboard</h1>
+                    <p>Review and approve plantation requests</p>
+                </div>
+                
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <p class="stat-number" id="pending-requests">0</p>
+                        <p class="stat-label">Pending Requests</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <p class="stat-number" id="approved-requests">0</p>
+                        <p class="stat-label">Approved</p>
+                    </div>
+                </div>
+                
+                <div class="requests-section">
+                    <h3>📋 Pending Plantation Requests</h3>
+                    <div id="requests-list" class="requests-list">
+                        <!-- Requests will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wallet Screen -->
+        <div id="wallet-screen" class="screen">
+            <div class="container">
+                <div class="header">
+                    <i class="fas fa-wallet logo"></i>
+                    <h1>My Wallet</h1>
+                    <p>Your carbon credit balance and transactions</p>
+                </div>
+                
+                <div class="wallet-card">
+                    <div class="wallet-header">
+                        <i class="fas fa-wallet"></i>
+                        <div class="wallet-info">
+                            <p class="balance-label">Total Credits</p>
+                            <p class="balance-amount" id="total-credits">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-leaf"></i>
+                        <p class="stat-number" id="credits-earned">0</p>
+                        <p class="stat-label">Credits Earned</p>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-chart-line"></i>
+                        <p class="stat-number" id="recent-transactions">0</p>
+                        <p class="stat-label">Recent Transactions</p>
+                    </div>
+                </div>
+                
+                <div class="transactions-section">
+                    <h3>Recent Transactions</h3>
+                    <div id="transactions-list" class="transactions-list">
+                        <!-- Transactions will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="credits-section">
+                    <h3>My Credits</h3>
+                    <div id="credits-list" class="credits-list">
+                        <!-- Credits will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-btn" onclick="showScreen('upload-screen')">
+                <i class="fas fa-upload"></i>
+                <span>Upload</span>
+            </button>
+            <button class="nav-btn" onclick="showScreen('wallet-screen')">
+                <i class="fas fa-wallet"></i>
+                <span>Wallet</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

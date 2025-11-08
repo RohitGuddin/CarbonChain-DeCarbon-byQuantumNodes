@@ -1,0 +1,19 @@
+{
+  "name": "carbonchain-mobile-web",
+  "version": "1.0.0",
+  "description": "CarbonChain Mobile Web App",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "dev": "python -m http.server 8080"
+  },
+  "keywords": ["carbon", "credits", "mobile", "web"],
+  "author": "CarbonChain",
+  "license": "MIT"
+}
+
+
+
+
+
+

@@ -1,0 +1,82 @@
+# ===================================================================
+# General / Operating System Files
+# ===================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===================================================================
+# IDE / Code Editor Config
+# ===================================================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ===================================================================
+# Python / Backend (nccr-backend)
+# ===================================================================
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Bytecode and cache
+__pycache__/
+*.pyc
+
+# Instance folder (common in Flask for local configs/DBs)
+instance/
+
+# ===================================================================
+# Node.js / JavaScript (frontend, mobile, mobile-web)
+# ===================================================================
+# Dependencies
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===================================================================
+# Build Artifacts & Generated Content
+# ===================================================================
+# Frontend build output (Vite)
+dist/
+.vite/
+
+# Mobile build output (Expo)
+.expo/
+
+# User-generated content from the backend
+# Assuming these folders contain files you don't want in version control
+uploads/
+invoices/
+nfts/
+
+# ===================================================================
+# Environment Variables & Sensitive Files
+# ===================================================================
+# Ignore all .env files
+.env
+.env.*
+
+# But DO NOT ignore the example file
+!.env.example
+
+# Android signing keys
+*.jks
+*.keystore
+
+
+
