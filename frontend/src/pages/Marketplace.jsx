@@ -67,8 +67,29 @@ const Marketplace = ({ user }) => {
     }
   };
 
-  const handleSetPrice = async (creditId, currentPrice, creditStatus) => {
-    console.log('handleSetPrice called:', { creditId, currentPrice, creditStatus, editingPrice });
+  const handleSetPrice = async (creditId, currentPrice, creditStatus, e) => {
+    // Prevent event propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Ensure type consistency for comparison
+    const normalizedCreditId = Number(creditId);
+    const normalizedEditingPrice = editingPrice ? Number(editingPrice) : null;
+    
+    console.log('🔧 handleSetPrice called:', { 
+      creditId, 
+      normalizedCreditId,
+      currentPrice, 
+      creditStatus, 
+      editingPrice,
+      normalizedEditingPrice,
+      priceInput,
+      creditIdType: typeof creditId, 
+      editingPriceType: typeof editingPrice,
+      willSave: normalizedEditingPrice === normalizedCreditId
+    });
     
     // Only allow price editing for approved credits
     if (creditStatus !== 'approved') {
@@ -77,16 +98,22 @@ const Marketplace = ({ user }) => {
       return;
     }
 
-    if (editingPrice === creditId) {
+    if (normalizedEditingPrice === normalizedCreditId) {
       // Save price
+      console.log('💾 Saving price...', { priceInput, creditId: normalizedCreditId });
       const price = parseFloat(priceInput);
+      console.log('💾 Parsed price:', price);
+      
       if (isNaN(price) || price <= 0) {
+        console.log('❌ Invalid price:', price);
         setMessage('Please enter a valid price greater than 0');
         setTimeout(() => setMessage(''), 3000);
         return;
       }
 
       setUpdatingPrice(true);
+      console.log('💾 Making API call...', { price, userId: user.id, creditId });
+      
       try {
         const response = await fetch(`/api/credit/${creditId}/set-price`, {
           method: 'POST',
@@ -99,27 +126,32 @@ const Marketplace = ({ user }) => {
           })
         });
 
+        console.log('💾 API Response status:', response.status);
         const data = await response.json();
+        console.log('💾 API Response data:', data);
 
         if (response.ok) {
-          setMessage('Price updated successfully!');
+          console.log('✅ Price updated successfully!');
+          setMessage('Price updated successfully! The total price has been recalculated.');
           setTimeout(() => setMessage(''), 3000);
           setEditingPrice(null);
           setPriceInput('');
-          fetchCredits(); // Refresh credits
+          fetchCredits(); // Refresh credits to show updated total_price
         } else {
+          console.error('❌ API Error:', data);
           setMessage(data.error || 'Failed to update price');
           setTimeout(() => setMessage(''), 3000);
         }
       } catch (error) {
-        setMessage('Failed to update price');
+        console.error('❌ Error updating price:', error);
+        setMessage('Failed to update price: ' + error.message);
         setTimeout(() => setMessage(''), 3000);
       } finally {
         setUpdatingPrice(false);
       }
     } else {
       // Start editing
-      setEditingPrice(creditId);
+      setEditingPrice(normalizedCreditId);
       setPriceInput(currentPrice ? currentPrice.toString() : '100');
     }
   };
@@ -722,41 +754,149 @@ const Marketplace = ({ user }) => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {credits.map((credit) => (
-                <div key={credit.credit_id} className="card card-glow p-6 hover-lift">
-                  <div className="flex items-center justify-between mb-6">
+                <div key={credit.credit_id} className="card card-glow p-6 hover-lift" style={{ position: 'relative', overflow: 'visible' }}>
+                  <div className="flex items-center justify-between mb-6" style={{ position: 'relative', zIndex: 1 }}>
                     <div className="flex items-center space-x-2">
                       <Leaf className="h-5 w-5 text-green-500" />
                       <span className="font-semibold text-lg text-gray-200">{parseFloat(credit.credits).toFixed(2)} Credits</span>
                     </div>
-                    <div className="text-right">
-                      {user.role === 'cultivator' && Number(credit.seller_id) === Number(user.id) && credit.status === 'approved' ? (
-                        editingPrice === credit.credit_id ? (
-                          <div className="flex items-center space-x-2">
+                    <div className="text-right" style={{ position: 'relative', zIndex: 100 }}>
+                      {(() => {
+                        const canEdit = user.role === 'cultivator' && Number(credit.seller_id) === Number(user.id) && credit.status === 'approved';
+                        if (user.role === 'cultivator') {
+                          console.log('Price edit check:', {
+                            canEdit,
+                            userRole: user.role,
+                            sellerId: credit.seller_id,
+                            userId: user.id,
+                            idsMatch: Number(credit.seller_id) === Number(user.id),
+                            status: credit.status,
+                            creditId: credit.credit_id
+                          });
+                        }
+                        return canEdit;
+                      })() ? (
+                        Number(editingPrice) === Number(credit.credit_id) ? (
+                          <div 
+                            className="flex items-center space-x-2 relative z-50"
+                            style={{ 
+                              pointerEvents: 'auto',
+                              isolation: 'isolate'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
                             <input
                               type="number"
                               min="0.01"
                               step="0.01"
                               value={priceInput}
                               onChange={(e) => setPriceInput(e.target.value)}
-                              className="w-24 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100 text-sm focus:outline-none focus:border-green-500"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('💾 Enter key pressed, saving...');
+                                  handleSetPrice(credit.credit_id, credit.price_per_credit, credit.status, e);
+                                }
+                              }}
+                              className="w-24 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-100 text-sm focus:outline-none focus:border-green-500 z-50 relative"
                               placeholder="Price"
                               autoFocus
+                              style={{ pointerEvents: 'auto' }}
                             />
-                            <button
-                              onClick={() => handleSetPrice(credit.credit_id, credit.price_per_credit, credit.status)}
-                              disabled={updatingPrice}
-                              className="p-1 text-green-500 hover:text-green-400 transition-colors"
-                              title="Save"
+                            <div 
+                              className="relative z-50"
+                              style={{ pointerEvents: 'auto', isolation: 'isolate' }}
                             >
-                              <Save className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={cancelPriceEdit}
-                              className="p-1 text-red-500 hover:text-red-400 transition-colors"
-                              title="Cancel"
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('💾 Save button clicked:', {
+                                    creditId: credit.credit_id,
+                                    editingPrice,
+                                    priceInput,
+                                    updatingPrice,
+                                    normalizedCreditId: Number(credit.credit_id),
+                                    normalizedEditingPrice: editingPrice ? Number(editingPrice) : null,
+                                    match: Number(editingPrice) === Number(credit.credit_id),
+                                    disabled: updatingPrice
+                                  });
+                                  
+                                  if (updatingPrice) {
+                                    console.log('⚠️ Already updating, ignoring click');
+                                    return;
+                                  }
+                                  
+                                  // Force save by directly calling the save logic
+                                  const price = parseFloat(priceInput);
+                                  if (isNaN(price) || price <= 0) {
+                                    console.log('❌ Invalid price:', price);
+                                    setMessage('Please enter a valid price greater than 0');
+                                    setTimeout(() => setMessage(''), 3000);
+                                    return;
+                                  }
+                                  
+                                  console.log('💾 Proceeding with save, calling handleSetPrice...');
+                                  handleSetPrice(credit.credit_id, credit.price_per_credit, credit.status, e);
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('💾 Save button mousedown');
+                                }}
+                                disabled={updatingPrice}
+                                className="p-2 text-green-500 hover:text-green-400 hover:bg-green-500/20 active:bg-green-500/30 transition-all cursor-pointer rounded-lg border border-green-500/30 hover:border-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed relative z-50"
+                                title={updatingPrice ? "Saving..." : "Save price"}
+                                style={{ 
+                                  pointerEvents: updatingPrice ? 'none' : 'auto', 
+                                  minWidth: '36px', 
+                                  minHeight: '36px',
+                                  touchAction: 'manipulation',
+                                  zIndex: 9999,
+                                  position: 'relative'
+                                }}
+                              >
+                                {updatingPrice ? (
+                                  <div className="h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <Save className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
+                            <div 
+                              className="relative z-50"
+                              style={{ pointerEvents: 'auto', isolation: 'isolate' }}
                             >
-                              <X className="h-4 w-4" />
-                            </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('❌ Cancel button clicked');
+                                  cancelPriceEdit();
+                                }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                className="p-2 text-red-500 hover:text-red-400 hover:bg-red-500/20 active:bg-red-500/30 transition-all cursor-pointer rounded-lg border border-red-500/30 hover:border-red-500/50 relative z-50"
+                                title="Cancel editing"
+                                style={{ 
+                                  pointerEvents: 'auto', 
+                                  minWidth: '36px', 
+                                  minHeight: '36px',
+                                  touchAction: 'manipulation',
+                                  zIndex: 9999,
+                                  position: 'relative'
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <div className="flex flex-col items-end">
@@ -767,19 +907,49 @@ const Marketplace = ({ user }) => {
                               <span className="text-xs text-gray-400">
                                 ₹{credit.price_per_credit.toFixed(2)} per credit
                               </span>
-                              <button
+                              <div 
+                                className="relative z-10"
+                                style={{ pointerEvents: 'auto' }}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  console.log('Edit button clicked:', { creditId: credit.credit_id, price: credit.price_per_credit, status: credit.status });
-                                  handleSetPrice(credit.credit_id, credit.price_per_credit, credit.status);
                                 }}
-                                className="p-1 text-gray-400 hover:text-green-400 transition-colors cursor-pointer"
-                                title="Edit price"
-                                type="button"
                               >
-                                <Edit className="h-3 w-3" />
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('✅ Edit button CLICKED:', { 
+                                      creditId: credit.credit_id, 
+                                      price: credit.price_per_credit, 
+                                      status: credit.status,
+                                      sellerId: credit.seller_id,
+                                      userId: user.id,
+                                      userRole: user.role,
+                                      timestamp: new Date().toISOString()
+                                    });
+                                    // Call handleSetPrice
+                                    handleSetPrice(credit.credit_id, credit.price_per_credit, credit.status, e);
+                                  }}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('🖱️ Edit button mousedown');
+                                  }}
+                                  onMouseEnter={() => console.log('🖱️ Edit button hover')}
+                                  className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/20 active:bg-green-500/30 transition-all cursor-pointer rounded-lg border border-gray-600 hover:border-green-500/50 relative z-10 flex items-center justify-center"
+                                  title="Click to edit price per credit"
+                                  style={{ 
+                                    pointerEvents: 'auto', 
+                                    minWidth: '36px', 
+                                    minHeight: '36px',
+                                    touchAction: 'manipulation'
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )

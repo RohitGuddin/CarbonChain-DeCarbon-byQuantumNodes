@@ -259,9 +259,17 @@ const CultivatorDashboard = ({ user }) => {
     }
   };
 
-  const handleSetPrice = async (creditId, currentPrice) => {
+  const handleSetPrice = async (creditId, currentPrice, e) => {
+    // Prevent event propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('handleSetPrice called:', { creditId, currentPrice, editingPrice, creditIdType: typeof creditId, editingPriceType: typeof editingPrice });
+    
     // Find the credit to check its status
-    const credit = requests.find(c => c.id === creditId);
+    const credit = requests.find(c => Number(c.id) === Number(creditId));
     
     // Only allow price editing for approved credits
     if (credit && credit.status !== 'approved') {
@@ -270,7 +278,11 @@ const CultivatorDashboard = ({ user }) => {
       return;
     }
     
-    if (editingPrice === creditId) {
+    // Ensure type consistency for comparison
+    const normalizedCreditId = Number(creditId);
+    const normalizedEditingPrice = editingPrice ? Number(editingPrice) : null;
+    
+    if (normalizedEditingPrice === normalizedCreditId) {
       // Save price
       const price = parseFloat(priceInput);
       if (isNaN(price) || price <= 0) {
@@ -312,7 +324,7 @@ const CultivatorDashboard = ({ user }) => {
       }
     } else {
       // Start editing
-      setEditingPrice(creditId);
+      setEditingPrice(normalizedCreditId);
       setPriceInput(currentPrice ? currentPrice.toString() : '100');
     }
   };
@@ -569,7 +581,7 @@ const CultivatorDashboard = ({ user }) => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100">
                         {credit.status === 'approved' ? (
-                          editingPrice === credit.id ? (
+                          Number(editingPrice) === Number(credit.id) ? (
                             <div className="flex items-center space-x-2">
                               <input
                                 type="number"
@@ -582,7 +594,8 @@ const CultivatorDashboard = ({ user }) => {
                                 autoFocus
                               />
                               <button
-                                onClick={() => handleSetPrice(credit.id, credit.price_per_credit)}
+                                type="button"
+                                onClick={(e) => handleSetPrice(credit.id, credit.price_per_credit, e)}
                                 disabled={updatingPrice}
                                 className="p-1 text-green-500 hover:text-green-400 transition-colors"
                                 title="Save"
@@ -590,6 +603,7 @@ const CultivatorDashboard = ({ user }) => {
                                 <Save className="h-4 w-4" />
                               </button>
                               <button
+                                type="button"
                                 onClick={cancelPriceEdit}
                                 className="p-1 text-red-500 hover:text-red-400 transition-colors"
                                 title="Cancel"
@@ -601,7 +615,8 @@ const CultivatorDashboard = ({ user }) => {
                             <div className="flex items-center space-x-2">
                               <span>₹{credit.price_per_credit?.toFixed(2) || '100.00'}</span>
                               <button
-                                onClick={() => handleSetPrice(credit.id, credit.price_per_credit)}
+                                type="button"
+                                onClick={(e) => handleSetPrice(credit.id, credit.price_per_credit, e)}
                                 className="p-1 text-gray-400 hover:text-green-400 transition-colors"
                                 title="Edit price"
                               >
