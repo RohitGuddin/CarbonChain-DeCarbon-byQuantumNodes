@@ -193,7 +193,10 @@ const Marketplace = ({ user }) => {
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
                     <span style="color: #64748b; font-size: 15px; font-weight: 500;">Merchant</span>
-                    <span style="color: #1e293b; font-size: 15px; font-weight: 600;">CarbonChain</span>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                      <span style="color: #1e293b; font-size: 15px; font-weight: 600;">EcoChain</span>
+                      <span style="color: #94a3b8; font-size: 10px;">by QuantumNodes</span>
+                    </div>
                   </div>
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #64748b; font-size: 15px; font-weight: 500;">Payment Method</span>
@@ -495,12 +498,18 @@ const Marketplace = ({ user }) => {
   };
 
   return (
-    <div className="marketplace-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+    <div className="marketplace-container min-h-screen animated-bg py-8 px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-12">
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-green-500 rounded-full blur-2xl opacity-30"></div>
+            <ShoppingCart className="h-16 w-16 text-green-500 relative z-10" />
+          </div>
+        </div>
+        <h1 className="text-5xl font-bold gradient-text mb-4">
           Carbon Credit Marketplace
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           {user.role === 'cultivator' 
             ? 'View and monitor your carbon credits on the marketplace'
             : 'Buy and sell verified carbon credits'
@@ -509,8 +518,10 @@ const Marketplace = ({ user }) => {
       </div>
 
       {message && (
-        <div className={`mb-6 p-4 rounded-md ${
-          message.includes('Successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+        <div className={`mb-6 p-4 rounded-lg glass border animate-slide-up ${
+          message.includes('Successfully') 
+            ? 'border-green-500/50 bg-green-500/10 text-green-400' 
+            : 'border-red-500/50 bg-red-500/10 text-red-400'
         }`}>
           {message}
         </div>
@@ -519,67 +530,67 @@ const Marketplace = ({ user }) => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Stats */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="card p-6 bg-gradient-to-br from-primary-50 to-primary-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-primary-600" />
+          <div className="card card-glow p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/30 hover-lift">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4 flex items-center">
+              <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
               Market Stats
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <div className="text-2xl font-bold text-primary-700">
+                <div className="text-3xl font-bold gradient-text">
                   {credits.length}
                 </div>
-                <div className="text-sm text-primary-600">Available Credits</div>
+                <div className="text-sm text-gray-400">Available Credits</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-primary-700">
+                <div className="text-3xl font-bold gradient-text">
                   {credits.reduce((sum, credit) => sum + credit.credits, 0).toFixed(2)}
                 </div>
-                <div className="text-sm text-primary-600">Total Credits</div>
+                <div className="text-sm text-gray-400">Total Credits</div>
               </div>
             </div>
           </div>
 
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="card card-glow p-6 hover-lift">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">
               {user.role === 'cultivator' ? 'Marketplace Overview' : 'How it Works'}
             </h3>
-            <div className="space-y-3 text-sm text-gray-600">
+            <div className="space-y-3 text-sm text-gray-400">
             {user.role === 'cultivator' ? (
               <>
                 <div className="flex items-start space-x-2">
-                  <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                  <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">1</div>
                   <span>View your carbon credits on the market</span>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                  <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">2</div>
                   <span>Monitor credit sales and pricing</span>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                  <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">3</div>
                   <span>Track your environmental impact</span>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">4</div>
+                  <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">4</div>
                   <span>See how your credits are valued</span>
                 </div>
               </>
             ) : (
               <>
               <div className="flex items-start space-x-2">
-                <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">1</div>
                 <span>Browse verified carbon credits</span>
               </div>
               <div className="flex items-start space-x-2">
-                <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">2</div>
                 <span>Select credits to purchase</span>
               </div>
               <div className="flex items-start space-x-2">
-                <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">3</div>
                   <span>Complete Razorpay payment</span>
               </div>
               <div className="flex items-start space-x-2">
-                <div className="w-6 h-6 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs font-bold">4</div>
+                <div className="w-6 h-6 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold border border-green-500/30">4</div>
                 <span>Credits transferred to your wallet</span>
                 </div>
               </>
@@ -587,9 +598,9 @@ const Marketplace = ({ user }) => {
           </div>
           
           {user.role !== 'cultivator' && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h4 className="text-sm font-semibold text-yellow-800 mb-2">🧪 Test Mode</h4>
-              <div className="text-xs text-yellow-700 space-y-1">
+            <div className="mt-6 p-4 glass border border-yellow-500/30 bg-yellow-500/10 rounded-lg">
+              <h4 className="text-sm font-semibold text-yellow-400 mb-2">🧪 Test Mode</h4>
+              <div className="text-xs text-yellow-300 space-y-1">
                 <div><strong>Card:</strong> 4111 1111 1111 1111</div>
                 <div><strong>Expiry:</strong> Any future date</div>
                 <div><strong>CVV:</strong> Any 3 digits</div>
@@ -603,50 +614,56 @@ const Marketplace = ({ user }) => {
         {/* Credits Grid */}
         <div className="lg:col-span-3">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="spinner"></div>
+            <div className="flex justify-center py-16">
+              <div className="text-center">
+                <div className="spinner mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading credits...</p>
+              </div>
             </div>
           ) : credits.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No credits available for purchase
+            <div className="text-center py-16">
+              <div className="inline-block p-6 glass border border-gray-800 rounded-full mb-4">
+                <ShoppingCart className="h-12 w-12 text-gray-600" />
+              </div>
+              <p className="text-xl text-gray-400">No credits available for purchase</p>
+              <p className="text-sm text-gray-500 mt-2">Credits will appear here when available</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {credits.map((credit) => (
-                <div key={credit.credit_id} className="card p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
+                <div key={credit.credit_id} className="card card-glow p-6 hover-lift">
+                  <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-2">
-                      <Leaf className="h-5 w-5 text-primary-600" />
-                      <span className="font-semibold text-lg">{parseFloat(credit.credits).toFixed(2)} Credits</span>
+                      <Leaf className="h-5 w-5 text-green-500" />
+                      <span className="font-semibold text-lg text-gray-200">{parseFloat(credit.credits).toFixed(2)} Credits</span>
                     </div>
-                    <div className="text-2xl font-bold text-primary-600">
+                    <div className="text-2xl font-bold gradient-text">
                       ₹{(credit.credits * 100).toFixed(2)}
                     </div>
                   </div>
 
                   <div className="space-y-3 mb-6">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{credit.seller_name}</span>
+                    <div className="flex items-center space-x-2 glass border border-gray-800 p-2 rounded-lg">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-300">{credit.seller_name}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Leaf className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{credit.plant_type}</span>
+                    <div className="flex items-center space-x-2 glass border border-gray-800 p-2 rounded-lg">
+                      <Leaf className="h-4 w-4 text-green-400" />
+                      <span className="text-sm text-gray-300">{credit.plant_type}</span>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      CO2 Removed: {credit.co2_removed} tons
+                    <div className="glass border border-gray-800 p-2 rounded-lg">
+                      <span className="text-xs text-gray-400 block mb-1">CO2 Removed</span>
+                      <span className="text-sm font-semibold text-green-400">{credit.co2_removed} tons</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {new Date(credit.created_at).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(credit.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     {user.role === 'cultivator' ? (
-                      <div className="w-full py-2 text-center text-sm text-gray-500 bg-gray-50 rounded-md border">
+                      <div className="w-full py-2.5 text-center text-sm text-gray-500 glass border border-gray-800 rounded-lg">
                         <span className="flex items-center justify-center">
                           <Leaf className="h-4 w-4 mr-1" />
                           View Only - Cannot Purchase
@@ -657,7 +674,7 @@ const Marketplace = ({ user }) => {
                     <button
                       onClick={() => handleBuyCredits(credit.credit_id, 1)}
                           disabled={buying === credit.credit_id || credit.credits < 1}
-                      className="w-full btn btn-primary py-2 text-sm flex items-center justify-center"
+                      className="w-full btn btn-primary py-2.5 text-sm flex items-center justify-center"
                     >
                       {buying === credit.credit_id ? (
                         <div className="flex items-center space-x-2">
@@ -676,7 +693,7 @@ const Marketplace = ({ user }) => {
                       <button
                         onClick={() => handleBuyCredits(credit.credit_id, Math.min(credit.credits, 5))}
                             disabled={buying === credit.credit_id || credit.credits < 5}
-                        className="w-full btn btn-outline py-2 text-sm"
+                        className="w-full btn btn-outline py-2.5 text-sm"
                       >
                             Buy {parseFloat(Math.min(credit.credits, 5)).toFixed(2)} Credits
                       </button>

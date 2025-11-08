@@ -18,7 +18,7 @@ def mint_nft(plant_type, co2_removed, user_name, nft_folder):
     nft_metadata = {
         "name": f"Carbon Credit NFT - {plant_type}",
         "description": f"Verified carbon credit for {co2_removed} tons CO2 removed by {plant_type}",
-        "image": f"https://carbonchain.com/nft/{plant_type.lower()}.png",
+        "image": f"https://ecochain.com/nft/{plant_type.lower()}.png",
         "attributes": [
             {"trait_type": "Plant Type", "value": plant_type},
             {"trait_type": "CO2 Removed", "value": co2_removed},
@@ -26,7 +26,7 @@ def mint_nft(plant_type, co2_removed, user_name, nft_folder):
             {"trait_type": "Verification", "value": "NCCR Verified"},
             {"trait_type": "Mint Date", "value": datetime.now().isoformat()}
         ],
-        "external_url": "https://carbonchain.com",
+        "external_url": "https://ecochain.com",
         "background_color": "00ff00"
     }
     

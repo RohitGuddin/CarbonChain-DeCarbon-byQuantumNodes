@@ -47,7 +47,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100">
+      <div className="min-h-screen animated-bg">
         {user && <Navbar user={user} onLogout={handleLogout} />}
         
         <Routes>

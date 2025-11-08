@@ -29,7 +29,7 @@ os.makedirs(Config.NFT_FOLDER, exist_ok=True)
 
 # Print API key status on startup
 print("=" * 60)
-print("🚀 CarbonChain Backend Starting...")
+print("🚀 EcoChain Backend Starting... (by QuantumNodes)")
 if Config.GEMINI_API_KEY:
     print(f"✅ Gemini API Key: Loaded (length: {len(Config.GEMINI_API_KEY)})")
     print("🤖 AI Analysis: ENABLED (Using real Gemini AI)")

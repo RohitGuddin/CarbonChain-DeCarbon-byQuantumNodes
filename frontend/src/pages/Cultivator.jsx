@@ -24,6 +24,7 @@ const CultivatorDashboard = ({ user }) => {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(null);
 
   useEffect(() => {
     // Animate dashboard on mount
@@ -42,7 +43,6 @@ const CultivatorDashboard = ({ user }) => {
       setRequests(response.data.credits || []);
     } catch (error) {
       console.error('Error fetching user data:', error);
-      // Set default values for hackathon demo
       setUserCredits({
         total_credits: 0,
         credits: [],
@@ -56,7 +56,6 @@ const CultivatorDashboard = ({ user }) => {
     const file = e.target.files[0];
     if (file) {
       setUploadData({ ...uploadData, photo: file });
-      // Start AI analysis immediately
       await analyzeImageWithAI(file);
     }
   };
@@ -69,7 +68,6 @@ const CultivatorDashboard = ({ user }) => {
       const formData = new FormData();
       formData.append('image', file);
       
-      // Mock EXIF data for demo
       const exifData = {
         latitude: 12.9716 + (Math.random() - 0.5) * 0.1,
         longitude: 77.5946 + (Math.random() - 0.5) * 0.1,
@@ -95,8 +93,6 @@ const CultivatorDashboard = ({ user }) => {
     } catch (error) {
       console.error('AI analysis error:', error);
       setMessage(error.message || 'AI analysis failed. Using fallback detection - please try uploading again.');
-      // Even if AI fails, we should still allow upload with fallback data
-      // The backend will use fallback detection if AI fails
     } finally {
       setAiLoading(false);
     }
@@ -122,7 +118,6 @@ const CultivatorDashboard = ({ user }) => {
       formData.append('image', uploadData.photo);
       formData.append('user_id', user.id);
       
-      // Use AI analysis data
       const plantationData = {
         plant_type: aiAnalysis.plant_type,
         area: aiAnalysis.area,
@@ -136,13 +131,11 @@ const CultivatorDashboard = ({ user }) => {
       
       setMessage(`Request uploaded successfully! AI detected: ${aiAnalysis.plant_type} (${(aiAnalysis.confidence * 100).toFixed(1)}% confidence)`);
       
-      // Reset form
       setUploadData({ photo: null, co2_removed: '' });
       setAiAnalysis(null);
       setShowAIAnalysis(false);
       document.getElementById('photo-upload').value = '';
       
-      // Refresh user data
       fetchUserData();
       
     } catch (error) {
@@ -153,38 +146,88 @@ const CultivatorDashboard = ({ user }) => {
   };
 
   const downloadInvoice = async (requestId) => {
+    if (!requestId) {
+      console.error('No request ID provided');
+      setMessage('Error: No request ID available');
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
+    if (downloadingInvoice === requestId) {
+      console.log('Already downloading this invoice');
+      return;
+    }
+
     try {
-      console.log(`Downloading invoice for request ID: ${requestId}`);
-      const response = await invoiceAPI.getInvoice(requestId);
+      setDownloadingInvoice(requestId);
+      console.log('Downloading invoice for request ID:', requestId);
+      setMessage('Downloading invoice...');
       
-      if (!response.data) {
-        throw new Error('No invoice data received');
+      const response = await fetch(`/api/invoice/${requestId}`, {
+        method: 'GET',
+      });
+      
+      console.log('Invoice response status:', response.status);
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            console.error('Failed to parse error JSON:', e);
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Server returned JSON instead of PDF');
+      }
+      
+      const blob = await response.blob();
+      console.log('Invoice blob type:', blob.type);
+      console.log('Invoice blob size:', blob.size);
+      
+      if (!blob || blob.size === 0) {
+        throw new Error('Received empty invoice file');
+      }
+      
       const url = window.URL.createObjectURL(blob);
       
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice_${requestId}.pdf`;
-      a.style.display = 'none';
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice_${requestId}.pdf`;
+      link.style.position = 'fixed';
+      link.style.left = '-9999px';
+      link.style.top = '-9999px';
       
-      document.body.appendChild(a);
-      a.click();
+      document.body.appendChild(link);
+      link.click();
       
-      // Clean up
       setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        document.body.removeChild(link);
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+        setDownloadingInvoice(null);
       }, 100);
       
-      setMessage(`Invoice downloaded successfully!`);
+      setMessage(`Invoice download started! Check your downloads folder.`);
       setTimeout(() => setMessage(''), 3000);
       
     } catch (error) {
       console.error('Download error:', error);
-      setMessage(`Failed to download invoice: ${error.response?.data?.error || error.message}`);
+      const errorMessage = error.message || 'Failed to download invoice';
+      setMessage(`Failed to download invoice: ${errorMessage}`);
       setTimeout(() => setMessage(''), 5000);
+      setDownloadingInvoice(null);
     }
   };
 
@@ -199,25 +242,26 @@ const CultivatorDashboard = ({ user }) => {
     }
   };
 
+  // Updated to match marketplace theme
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-500/10 text-green-400 border border-green-500/30';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-500/10 text-red-400 border border-red-500/30';
       default:
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30';
     }
   };
 
   return (
-    <div className="dashboard-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="dashboard-container min-h-screen animated-bg py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+      <div className="text-center mb-12">
+        <h1 className="text-5xl font-bold gradient-text mb-4">
           Welcome, {user.name}!
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Upload your plantation photos and earn carbon credits
         </p>
       </div>
@@ -225,25 +269,25 @@ const CultivatorDashboard = ({ user }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Upload Form */}
         <div className="lg:col-span-2">
-          <div className="card p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <Upload className="h-6 w-6 mr-2 text-primary-600" />
+          <div className="card card-glow p-6">
+            <h2 className="text-2xl font-bold text-gray-200 mb-6 flex items-center">
+              <Upload className="h-6 w-6 mr-2 text-primary-500" />
               Upload Plantation Request
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Photo Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   Plantation Photo
                 </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-400 transition-colors">
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-700 border-dashed rounded-lg hover:border-primary-500 transition-colors bg-white/5">
                   <div className="space-y-1 text-center">
-                    <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600">
+                    <Camera className="mx-auto h-12 w-12 text-gray-500" />
+                    <div className="flex text-sm text-gray-400">
                       <label
                         htmlFor="photo-upload"
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                        className="relative cursor-pointer bg-transparent rounded-md font-medium text-primary-500 hover:text-primary-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-gray-900 focus-within:ring-primary-500"
                       >
                         <span>Upload a photo</span>
                         <input
@@ -261,7 +305,7 @@ const CultivatorDashboard = ({ user }) => {
                   </div>
                 </div>
                 {uploadData.photo && (
-                  <p className="mt-2 text-sm text-green-600">
+                  <p className="mt-2 text-sm text-green-400">
                     Selected: {uploadData.photo.name}
                   </p>
                 )}
@@ -269,12 +313,12 @@ const CultivatorDashboard = ({ user }) => {
 
               {/* AI Analysis Loading */}
               {aiLoading && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <div className="glass border border-blue-500/30 bg-blue-500/10 rounded-lg p-6 text-center">
                   <div className="flex items-center justify-center space-x-3">
                     <div className="spinner"></div>
                     <div>
-                      <h3 className="text-lg font-medium text-blue-900">AI Analysis in Progress</h3>
-                      <p className="text-blue-700">Analyzing your plantation photo...</p>
+                      <h3 className="text-lg font-medium text-blue-300">AI Analysis in Progress</h3>
+                      <p className="text-blue-400">Analyzing your plantation photo...</p>
                     </div>
                   </div>
                 </div>
@@ -282,35 +326,35 @@ const CultivatorDashboard = ({ user }) => {
 
               {/* AI Analysis Results */}
               {showAIAnalysis && aiAnalysis && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <h3 className="text-lg font-medium text-green-900 mb-4 flex items-center">
+                <div className="glass border border-green-500/30 bg-green-500/10 rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-green-300 mb-4 flex items-center">
                     <CheckCircle className="h-5 w-5 mr-2" />
                     AI Analysis Results
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-green-700">Plant Type</label>
-                      <p className="text-green-900 font-semibold">{aiAnalysis.plant_type}</p>
+                      <label className="block text-sm font-medium text-green-500">Plant Type</label>
+                      <p className="text-green-300 font-semibold">{aiAnalysis.plant_type}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-green-700">Confidence</label>
-                      <p className="text-green-900 font-semibold">{(aiAnalysis.confidence * 100).toFixed(1)}%</p>
+                      <label className="block text-sm font-medium text-green-500">Confidence</label>
+                      <p className="text-green-300 font-semibold">{(aiAnalysis.confidence * 100).toFixed(1)}%</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-green-700">Location</label>
-                      <p className="text-green-900 font-semibold">{aiAnalysis.location}</p>
+                      <label className="block text-sm font-medium text-green-500">Location</label>
+                      <p className="text-green-300 font-semibold">{aiAnalysis.location}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-green-700">Estimated Area</label>
-                      <p className="text-green-900 font-semibold">{aiAnalysis.area}</p>
+                      <label className="block text-sm font-medium text-green-500">Estimated Area</label>
+                      <p className="text-green-300 font-semibold">{aiAnalysis.area}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-green-700">Planting Date</label>
-                      <p className="text-green-900 font-semibold">{aiAnalysis.planting_date}</p>
+                      <label className="block text-sm font-medium text-green-500">Planting Date</label>
+                      <p className="text-green-300 font-semibold">{aiAnalysis.planting_date}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-green-700">Growth Stage</label>
-                      <p className="text-green-900 font-semibold">{aiAnalysis.growth_stage}</p>
+                      <label className="block text-sm font-medium text-green-500">Growth Stage</label>
+                      <p className="text-green-300 font-semibold">{aiAnalysis.growth_stage}</p>
                     </div>
                   </div>
                 </div>
@@ -334,8 +378,10 @@ const CultivatorDashboard = ({ user }) => {
             </form>
 
             {message && (
-              <div className={`mt-4 p-4 rounded-md ${
-                message.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              <div className={`mt-4 p-4 rounded-lg glass border animate-slide-up ${
+                message.includes('successfully') 
+                  ? 'border-green-500/50 bg-green-500/10 text-green-400' 
+                  : 'border-red-500/50 bg-red-500/10 text-red-400'
               }`}>
                 {message}
               </div>
@@ -346,31 +392,31 @@ const CultivatorDashboard = ({ user }) => {
         {/* Wallet & Stats */}
         <div className="space-y-6">
           {/* Wallet Card */}
-          <div className="card p-6 bg-gradient-to-br from-primary-50 to-primary-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Wallet className="h-5 w-5 mr-2 text-primary-600" />
+          <div className="card card-glow p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/30 hover-lift">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4 flex items-center">
+              <Wallet className="h-5 w-5 mr-2 text-primary-500" />
               Your Wallet
             </h3>
-            <div className="text-3xl font-bold text-primary-700 mb-2">
+            <div className="text-3xl font-bold gradient-text mb-2">
               {userCredits?.total_credits?.toFixed(2) || '0.00'}
             </div>
-            <div className="text-sm text-primary-600">Carbon Credits</div>
-            <div className="mt-4 text-xs text-gray-600">
+            <div className="text-sm text-green-400">Carbon Credits</div>
+            <div className="mt-4 text-xs text-gray-500">
               Wallet: {user.wallet_address.slice(0, 10)}...
             </div>
           </div>
 
           {/* Recent Activity */}
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="card card-glow p-6 hover-lift">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">
               Recent Activity
             </h3>
             <div className="space-y-3">
               {userCredits?.recent_transactions?.slice(0, 5).map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between text-sm">
                   <div className="flex items-center space-x-2">
-                    <Leaf className="h-4 w-4 text-primary-600" />
-                    <span className={tx.type === 'received' ? 'text-green-600' : 'text-red-600'}>
+                    <Leaf className="h-4 w-4 text-primary-500" />
+                    <span className={tx.type === 'received' ? 'text-green-400' : 'text-red-400'}>
                       {tx.type === 'received' ? '+' : '-'}{tx.credits}
                     </span>
                   </div>
@@ -386,16 +432,17 @@ const CultivatorDashboard = ({ user }) => {
         </div>
       </div>
 
+
       {/* Credits History */}
       {requests.length > 0 && (
-        <div className="mt-8">
+        <div className="mt-8 bg-gray-900">
           <div className="card p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">
+            <h3 className="text-xl font-semibold text-gray-100 mb-6">
               Your Carbon Credits
             </h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-900">
+                <thead className="bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Plant Type
@@ -416,11 +463,11 @@ const CultivatorDashboard = ({ user }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {requests.map((credit) => (
-                    <tr key={credit.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={credit.id} className="bg-gray-900 hover:bg-gray-800">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                         {credit.plant_type}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-100 ">
                         {credit.credits}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -433,13 +480,33 @@ const CultivatorDashboard = ({ user }) => {
                         {new Date(credit.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {credit.status === 'approved' ? (
+                        {credit.status === 'approved' && credit.request_id ? (
                           <button
-                            onClick={() => downloadInvoice(credit.request_id)}
-                            className="text-primary-600 hover:text-primary-900 flex items-center"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Invoice button clicked, request_id:', credit.request_id);
+                              downloadInvoice(credit.request_id);
+                            }}
+                            disabled={downloadingInvoice === credit.request_id}
+                            className={`inline-flex items-center px-3 py-1.5 rounded-lg transition-all duration-300 font-medium text-sm ${
+                              downloadingInvoice === credit.request_id
+                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                : 'bg-primary-600 hover:bg-primary-700 text-white cursor-pointer'
+                            }`}
+                            type="button"
                           >
-                            <Download className="h-4 w-4 mr-1" />
-                            Invoice
+                            {downloadingInvoice === credit.request_id ? (
+                              <>
+                                <div className="spinner mr-1.5" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                                Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4 mr-1.5" />
+                                Invoice
+                              </>
+                            )}
                           </button>
                         ) : (
                           <span className="text-gray-400 text-sm">Not available</span>
@@ -458,6 +525,3 @@ const CultivatorDashboard = ({ user }) => {
 };
 
 export default CultivatorDashboard;
-
-
-
