@@ -1,6 +1,7 @@
 # DeCarbon - Carbon Credit Marketplace Platform
 
 A comprehensive blockchain-inspired carbon credit marketplace platform that enables cultivators to earn carbon credits through AI-verified plantation activities, and companies to purchase these credits to offset their carbon footprint.
+For ppt do visit :- https://drive.google.com/file/d/1cyYaBUVu5SmyUaRhu8grlUCqxifaADPp/view?usp=sharing
 
 **Built by QuantumNodes**
 
