@@ -312,6 +312,12 @@ The application uses the following main models:
 - Prices are used in marketplace calculations
 - Buyers pay based on the seller's set price per credit
 
+### Razorpay payment recorded on Polygon Amoy
+
+Razorpay settles the rupees. A carbon-credit smart contract on Polygon Amoy settles the credits. The contract runs only after the backend verifies the Razorpay signature. Gas on Amoy is paid by the server wallet, not by the company.
+
+![Razorpay payment recorded on Polygon Amoy](docs/razorpay-amoy-flow.png)
+
 ### 3D Blockchain Explorer
 - Interactive 3D cube visualization of blockchain blocks
 - Horizontal scrollable chain layout

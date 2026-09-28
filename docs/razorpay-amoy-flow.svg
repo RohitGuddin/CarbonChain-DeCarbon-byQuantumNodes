@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="1120" viewBox="0 0 820 1120" role="img" aria-label="Razorpay payment recorded on Polygon Amoy">
+  <rect width="820" height="1120" fill="#ffffff"/>
+  <style>
+    .box { fill: #f8fafc; stroke: #0f172a; stroke-width: 1.5; }
+    .decision { fill: #fff7ed; stroke: #c2410c; stroke-width: 1.5; }
+    .stop { fill: #fef2f2; stroke: #b91c1c; stroke-width: 1.5; }
+    .chain { fill: #ecfdf5; stroke: #047857; stroke-width: 1.5; }
+    .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; fill: #0f172a; }
+    .small { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; fill: #334155; }
+    .arrow { stroke: #0f172a; stroke-width: 1.5; fill: none; }
+    .no { stroke: #b91c1c; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <rect class="box" x="150" y="20" width="400" height="48" rx="8"/>
+  <text class="label" x="350" y="49" text-anchor="middle">Company buys credits</text>
+  <line class="arrow" x1="350" y1="68" x2="350" y2="96"/>
+  <polygon points="344,90 356,90 350,100" fill="#0f172a"/>
+
+  <rect class="box" x="110" y="100" width="480" height="48" rx="8"/>
+  <text class="label" x="350" y="129" text-anchor="middle">Backend creates Razorpay order in INR</text>
+  <line class="arrow" x1="350" y1="148" x2="350" y2="176"/>
+  <polygon points="344,170 356,170 350,180" fill="#0f172a"/>
+
+  <rect class="box" x="150" y="180" width="400" height="48" rx="8"/>
+  <text class="label" x="350" y="209" text-anchor="middle">Razorpay Checkout</text>
+  <line class="arrow" x1="350" y1="228" x2="350" y2="264"/>
+  <polygon points="344,258 356,258 350,268" fill="#0f172a"/>
+
+  <polygon class="decision" points="350,268 520,316 350,364 180,316"/>
+  <text class="label" x="350" y="321" text-anchor="middle">Payment captured?</text>
+  <text class="small" x="366" y="386">Yes</text>
+  <line class="arrow" x1="350" y1="364" x2="350" y2="404"/>
+  <polygon points="344,398 356,398 350,408" fill="#0f172a"/>
+
+  <line class="no" x1="520" y1="316" x2="628" y2="316"/>
+  <polygon points="620,310 632,316 620,322" fill="#b91c1c"/>
+  <text class="small" x="560" y="306">No</text>
+  <rect class="stop" x="632" y="292" width="168" height="48" rx="8"/>
+  <text class="small" x="716" y="321" text-anchor="middle">Stop. No chain write</text>
+
+  <rect class="box" x="70" y="408" width="560" height="48" rx="8"/>
+  <text class="label" x="350" y="437" text-anchor="middle">Browser sends order id, payment id, signature</text>
+  <line class="arrow" x1="350" y1="456" x2="350" y2="492"/>
+  <polygon points="344,486 356,486 350,496" fill="#0f172a"/>
+
+  <polygon class="decision" points="350,496 540,556 350,616 160,556"/>
+  <text class="label" x="350" y="552" text-anchor="middle">Backend verifies</text>
+  <text class="label" x="350" y="572" text-anchor="middle">Razorpay signature?</text>
+  <text class="small" x="366" y="638">Yes</text>
+  <line class="arrow" x1="350" y1="616" x2="350" y2="656"/>
+  <polygon points="344,650 356,650 350,660" fill="#0f172a"/>
+
+  <line class="no" x1="540" y1="556" x2="628" y2="556"/>
+  <polygon points="620,550 632,556 620,562" fill="#b91c1c"/>
+  <text class="small" x="568" y="546">No</text>
+  <rect class="stop" x="632" y="532" width="168" height="48" rx="8"/>
+  <text class="small" x="716" y="561" text-anchor="middle">Stop. No chain write</text>
+
+  <rect class="chain" x="50" y="660" width="600" height="48" rx="8"/>
+  <text class="label" x="350" y="689" text-anchor="middle">Server wallet calls credit contract on Polygon Amoy</text>
+  <line class="arrow" x1="350" y1="708" x2="350" y2="736"/>
+  <polygon points="344,730 356,730 350,740" fill="#0f172a"/>
+
+  <rect class="chain" x="50" y="740" width="600" height="48" rx="8"/>
+  <text class="label" x="350" y="769" text-anchor="middle">Contract transfers credits from seller to buyer</text>
+  <line class="arrow" x1="350" y1="788" x2="350" y2="816"/>
+  <polygon points="344,810 356,810 350,820" fill="#0f172a"/>
+
+  <rect class="chain" x="70" y="820" width="560" height="48" rx="8"/>
+  <text class="label" x="350" y="849" text-anchor="middle">Amoy returns transaction hash and block number</text>
+  <line class="arrow" x1="350" y1="868" x2="350" y2="896"/>
+  <polygon points="344,890 356,890 350,900" fill="#0f172a"/>
+
+  <rect class="box" x="90" y="900" width="520" height="48" rx="8"/>
+  <text class="label" x="350" y="929" text-anchor="middle">Database stores hash, block, and credit rows</text>
+  <line class="arrow" x1="350" y1="948" x2="350" y2="976"/>
+  <polygon points="344,970 356,970 350,980" fill="#0f172a"/>
+
+  <rect class="chain" x="130" y="980" width="440" height="48" rx="8"/>
+  <text class="label" x="350" y="1009" text-anchor="middle">Explorer shows the Amoy transaction</text>
+</svg>
