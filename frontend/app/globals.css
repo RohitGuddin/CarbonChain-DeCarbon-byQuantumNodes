@@ -1,0 +1,60 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #07140f;
+  color: #e7f6ee;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+nav {
+  display: flex;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #164232;
+}
+
+.card {
+  background: #0d2219;
+  border: 1px solid #1f5a40;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+input, button {
+  font: inherit;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin: 8px 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #1f5a40;
+  background: #07140f;
+  color: inherit;
+}
+
+button {
+  background: #16a34a;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}

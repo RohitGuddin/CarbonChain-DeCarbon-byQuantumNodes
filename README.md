@@ -47,29 +47,21 @@ CarbonChain lets restoration projects submit plantation evidence and lets compan
 ## 🏗️ Project Structure
 
 ```
-ECHOCHAIN2/
-├── nccr-backend/          # Node.js API
-│   ├── app.py             # API entry
-│   ├── models.py          # MongoDB document models
-│   ├── config.py          # Configuration settings
-│   ├── ai.py              # OpenRouter verification
-│   ├── invoice.py         # PDF invoice generation
-│   ├── utils.py           # Polygon issuance and transfer helpers
-│   ├── requirements.txt   # Service dependencies
-│   └── README.md          # Backend documentation
+CarbonChain/
+├── nccr-backend/                 # Node.js + TypeScript API
+│   ├── src/index.ts              # Express routes
+│   ├── src/models.ts             # MongoDB models
+│   ├── src/services/openrouter.ts
+│   ├── src/services/razorpay.ts
+│   ├── src/services/polygon.ts   # viem client for Polygon Amoy
+│   └── package.json
 │
-├── frontend/              # Next.js + TypeScript web application
-│   ├── src/
-│   │   ├── pages/         # Page components
-│   │   │   ├── Login.jsx      # Login/Registration page
-│   │   │   ├── Cultivator.jsx # Cultivator dashboard
-│   │   │   ├── Marketplace.jsx # Company marketplace
-│   │   │   └── Explorer.jsx     # Blockchain explorer
-│   │   ├── components/     # Reusable components
-│   │   ├── utils/         # API client & utilities
-│   │   └── styles/         # Global styles
-│   ├── package.json
-│   └── README.md          # Frontend documentation
+└── frontend/                     # Next.js + TypeScript
+    ├── app/page.tsx              # Register and login
+    ├── app/cultivator/page.tsx
+    ├── app/marketplace/page.tsx  # Razorpay checkout
+    ├── app/explorer/page.tsx
+    └── package.json
 ```
 
 ## 🚀 Quick Start
@@ -86,29 +78,9 @@ ECHOCHAIN2/
 #### 1. Backend Setup
 
 ```bash
-# Navigate to backend directory
 cd nccr-backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment variables
+npm install
 cp env.example .env
-# Edit .env and add your configuration:
-# - SECRET_KEY
-# - MONGODB_URI
-# - OPENROUTER_API_KEY
-# - RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET
-# - POLYGON_AMOY_RPC_URL and SERVER_WALLET_PRIVATE_KEY
 ```
 
 #### 2. Frontend Setup
@@ -129,8 +101,7 @@ npm install
 
 ```bash
 cd nccr-backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-python run.py
+npm run dev
 ```
 
 The backend API will be available at `http://localhost:8000`
@@ -161,7 +132,7 @@ cd frontend
 npm run build
 ```
 
-The built files will be in the `dist/` directory.
+Next.js writes the production build to `.next/`.
 
 ## 🔧 Configuration
 
@@ -170,13 +141,13 @@ The built files will be in the `dist/` directory.
 Create a `.env` file in the `nccr-backend/` directory:
 
 ```env
-SECRET_KEY=your-secret-key-here
 MONGODB_URI=mongodb://localhost:27017/carbonchain
 OPENROUTER_API_KEY=your-openrouter-api-key
 RAZORPAY_KEY_ID=your-razorpay-key-id
 RAZORPAY_KEY_SECRET=your-razorpay-key-secret
 POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
-SERVER_WALLET_PRIVATE_KEY=your-server-wallet-key
+CREDIT_CONTRACT_ADDRESS=0xYourCreditContract
+SERVER_WALLET_PRIVATE_KEY=0xyour-server-wallet-key
 ```
 
 ### Database
@@ -397,34 +368,27 @@ Use these for testing the application.
 
 ### Backend Issues
 
-1. **Database Connection Error**
-   - Check `DATABASE_URL` in `.env`
-   - Ensure database file has write permissions
+1. **Database connection**
+   - Confirm MongoDB is running and `MONGODB_URI` in `.env` points at it
 
 2. **Verification has no plant result**
    - Confirm `OPENROUTER_API_KEY` in `.env`
-   - Confirm the key is accepted by OpenRouter
 
-3. **Port Already in Use**
-   - Change port in `run.py` (default: 8000)
-   - Or stop the process using the port
+3. **Port already in use**
+   - The API uses port 8000. Stop the other process or set `PORT` in `.env`
 
-4. **Module Not Found Errors**
-   - Ensure all dependencies are installed: `pip install -r requirements.txt`
-   - Common missing packages: `setuptools`, `reportlab`
+4. **Missing modules**
+   - From `nccr-backend`, run `npm install`
 
 ### Frontend Issues
 
 1. **API Connection Failed**
    - Ensure backend is running on port 8000
-   - Check proxy configuration in `vite.config.js`
+   - Requests to `/api` are rewritten to `http://localhost:8000` in `frontend/next.config.ts`
 
-2. **Build Errors**
+2. **Build errors**
    - Clear `node_modules` and reinstall: `rm -rf node_modules && npm install`
-   - Check Node.js version (requires 16+)
-
-3. **Chart Not Displaying**
-   - Ensure `recharts` is installed: `npm install recharts`
+   - Use Node.js 18 or newer
 
 ## 🚢 Deployment
 
