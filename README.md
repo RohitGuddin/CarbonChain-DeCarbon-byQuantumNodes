@@ -70,17 +70,6 @@ ECHOCHAIN2/
 │   │   └── styles/         # Global styles
 │   ├── package.json
 │   └── README.md          # Frontend documentation
-│
-├── mobile/                # React Native mobile app
-│   ├── src/
-│   │   ├── screens/       # Screen components
-│   │   └── utils/         # API client
-│   ├── package.json
-│   └── README.md          # Mobile documentation
-│
-└── mobile-web/            # Mobile web interface
-    ├── index.html
-    └── script.js
 ```
 
 ## 🚀 Quick Start
@@ -90,7 +79,6 @@ ECHOCHAIN2/
 - **Backend**: Node.js 18+
 - **Frontend**: Node.js 18+ and npm
 - **Database**: MongoDB
-- **Mobile**: Node.js 18+ and Expo CLI (optional)
 - **Keys**: OpenRouter API key, Razorpay key id and secret, Polygon Amoy RPC URL and server wallet
 
 ### Installation & Setup
@@ -128,16 +116,6 @@ cp env.example .env
 ```bash
 # Navigate to frontend directory
 cd frontend
-
-# Install dependencies
-npm install
-```
-
-#### 3. Mobile Setup (Optional)
-
-```bash
-# Navigate to mobile directory
-cd mobile
 
 # Install dependencies
 npm install
@@ -259,10 +237,6 @@ For detailed API documentation, see [nccr-backend/README.md](nccr-backend/README
 - **Razorpay** — corporate credit purchases in INR
 - **TailwindCSS**, **Recharts**, and **GSAP** — interface, CO2 charts, and motion
 
-### Mobile
-- **React Native** and **Expo** — field upload and wallet view
-- **AsyncStorage** — local session storage
-
 ## 🗄️ Database Schema
 
 The application uses the following main models:
@@ -329,7 +303,7 @@ flowchart TD
         Company["🏢 Company"]
     end
 
-    subgraph Frontend ["Next.js Web & Mobile Client"]
+    subgraph Frontend ["Next.js Web Client"]
         AuthUI["Login / Register"]
         CultDashboard["Cultivator Dashboard"]
         MarketplaceUI["Carbon Credit Marketplace"]
@@ -419,25 +393,6 @@ The application creates these accounts on first run:
 
 Use these for testing the application.
 
-## 📱 Mobile App
-
-The mobile app provides:
-
-- Photo upload with geotagging
-- AI plant detection results
-- Wallet and credit management
-- Transaction history
-- PDF invoice viewing
-
-To run the mobile app:
-
-```bash
-cd mobile
-npx expo start
-```
-
-Scan the QR code with Expo Go app on your device.
-
 ## 🐛 Troubleshooting
 
 ### Backend Issues
@@ -505,7 +460,6 @@ For issues and questions, please open an issue on the repository.
 
 - [Backend API Documentation](nccr-backend/README.md)
 - [Frontend Documentation](frontend/README.md)
-- [Mobile App Documentation](mobile/README.md)
 
 ---
 
