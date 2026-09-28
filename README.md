@@ -330,6 +330,98 @@ Razorpay settles the rupees. A carbon-credit smart contract on Polygon Amoy sett
 - Publicly accessible from login page
 - Area chart with gradient visualization
 
+## 🔄 System Workflows & Flowcharts
+
+### Complete project flow
+
+A cultivator registers, uploads a plantation photo, and receives credits only when Gemini detects a mangrove. Those credits are priced and listed. A company buys them with Razorpay. After the payment signature checks out, the credit contract on Polygon Amoy moves the credits, the database stores the hash, and the explorer updates.
+
+![Complete DeCarbon workflow](docs/project-workflow.png)
+
+### 1. Overall System Architecture
+```mermaid
+flowchart TD
+    subgraph Users ["User Roles"]
+        Cultivator["👨‍🌾 Cultivator"]
+        Company["🏢 Company"]
+    end
+
+    subgraph Frontend ["React Web & Mobile Client"]
+        AuthUI["Login / Register"]
+        CultDashboard["Cultivator Dashboard"]
+        MarketplaceUI["Carbon Credit Marketplace"]
+        ExplorerUI["3D Blockchain Explorer"]
+    end
+
+    subgraph Backend ["Flask REST API (nccr-backend)"]
+        AIModule["Google Gemini Vision AI"]
+        AutoApproval["Mangrove Auto-Approval Engine"]
+        PaymentVerifier["Razorpay Signature Verifier"]
+        PDFGen["ReportLab PDF Invoice Generator"]
+        DB[(SQLite / PostgreSQL)]
+    end
+
+    subgraph Blockchain ["Polygon Amoy Testnet & Payment"]
+        Razorpay["💳 Razorpay Gateway"]
+        AmoyContract["📜 Carbon Credit Smart Contract"]
+    end
+
+    Cultivator --> AuthUI
+    Company --> AuthUI
+    
+    Cultivator --> CultDashboard
+    CultDashboard -->|1. Upload plantation photo| AIModule
+    AIModule -->|2. Detect plant species| AutoApproval
+    AutoApproval -->|3. Mangrove? Issue Credits| DB
+    
+    Company --> MarketplaceUI
+    MarketplaceUI -->|4. Buy Credits| Razorpay
+    Razorpay -->|5. Payment Signature| PaymentVerifier
+    PaymentVerifier -->|6. Trigger Mint/Transfer| AmoyContract
+    AmoyContract -->|7. Tx Hash & Block #| DB
+    DB -->|8. Render Live Chain| ExplorerUI
+```
+
+### 2. Cultivator Verification & Credit Issuance Flow
+```mermaid
+flowchart TD
+    A["👨‍🌾 Cultivator uploads plantation photo with EXIF geotag"] --> B["Backend receives image"]
+    B --> C["Send image to Google Gemini Vision API"]
+    
+    C --> D{"Detected Plant Species?"}
+    
+    D -->|Mangrove| E["✅ Auto-Approved!"]
+    D -->|Other Plant / Unknown| F["❌ Automatically Rejected"]
+    
+    E --> G["Mint Carbon Credits to Cultivator Wallet"]
+    G --> H["Store Plantation Record & Metadata in Database"]
+    H --> I["Cultivator sets Custom Price (₹ per credit)"]
+    I --> J["Credits listed live on Carbon Credit Marketplace"]
+    J --> K["📄 Generate PDF Invoice / Certificate"]
+```
+
+### 3. Company Purchase & Blockchain Settlement Flow
+```mermaid
+flowchart TD
+    A["🏢 Company selects Carbon Credits on Marketplace"] --> B["Backend creates Razorpay Order in INR"]
+    B --> C["Open Razorpay Payment Modal"]
+    
+    C --> D{"Payment Captured?"}
+    D -->|No| E["🛑 Payment Failed / Cancelled<br/>(No blockchain write)"]
+    
+    D -->|Yes| F["Browser sends order_id, payment_id & signature to Backend"]
+    F --> G{"Backend verifies Razorpay HMAC Signature"}
+    
+    G -->|Invalid| H["🛑 Signature Mismatch<br/>(No blockchain write)"]
+    G -->|Valid| I["Server wallet executes smart contract on Polygon Amoy"]
+    
+    I --> J["Smart Contract transfers credit tokens from Seller to Buyer"]
+    J --> K["Amoy node returns Tx Hash & Block Number"]
+    K --> L["Update DB: Mark credits as Purchased & Transfer ownership"]
+    L --> M["📄 Generate PDF Purchase Invoice"]
+    L --> N["🌐 3D Blockchain Explorer updates live with new block"]
+```
+
 ## 🧪 Demo Users
 
 The application creates demo users on first run:
