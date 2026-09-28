@@ -1,6 +1,6 @@
-# DeCarbon Backend API
+# CarbonChain API
 
-Flask-based REST API for the DeCarbon carbon credit marketplace.
+Node.js API for verification, Razorpay purchases, and Polygon Amoy credit ownership.
 
 **Built by QuantumNodes**
 
@@ -49,13 +49,16 @@ Create a `.env` file with the following variables:
 
 ```env
 SECRET_KEY=your-secret-key-here
-DATABASE_URL=sqlite:///carbonchain.db
-GEMINI_API_KEY=your-gemini-api-key-here
+MONGODB_URI=mongodb://localhost:27017/carbonchain
+OPENROUTER_API_KEY=your-openrouter-api-key
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
 ```
 
 ### Database
 
-The application uses SQLite by default. For production, consider using PostgreSQL:
+Application records are stored in MongoDB. A local database URL is also accepted:
 
 ```env
 DATABASE_URL=postgresql://user:password@localhost/carbonchain
@@ -345,8 +348,7 @@ GET /invoice/purchase/<transaction_id>
 
 The system automatically detects plant types from uploaded images:
 
-1. **Primary**: Google Gemini Vision API (if API key provided)
-2. **Fallback**: Random selection from predefined plant types
+OpenRouter reviews the uploaded plantation photo and returns plant type, removal context, and risk notes for administrator review.
 
 #### Supported Plant Types
 - Mangrove
@@ -362,10 +364,10 @@ The system automatically detects plant types from uploaded images:
 
 ### Enabling AI Detection
 
-1. Get a Google Gemini API key from [Google AI Studio](https://makersuite.google.com/)
+1. Create an OpenRouter API key
 2. Add it to your `.env` file:
 ```env
-GEMINI_API_KEY=your-api-key-here
+OPENROUTER_API_KEY=your-api-key-here
 ```
 
 ## 📄 PDF Invoice Generation

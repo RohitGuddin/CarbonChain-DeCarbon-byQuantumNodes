@@ -1,6 +1,6 @@
 # CarbonChain Frontend
 
-React-based web application for the CarbonChain carbon credit marketplace.
+Next.js and TypeScript web application for the CarbonChain carbon-credit marketplace.
 
 ## 🚀 Quick Start
 
@@ -123,7 +123,7 @@ frontend/
 ### Marketplace (`/marketplace`)
 - Available credits listing
 - Credit purchase interface
-- UPI payment simulation
+- Razorpay checkout linked to Polygon Amoy ownership transfer
 - Market statistics
 
 ### Explorer (`/explorer`)

@@ -42,7 +42,7 @@
   <polygon points="224,408 236,408 230,420" fill="#0f172a"/>
 
   <rect class="box" x="70" y="420" width="320" height="48" rx="8"/>
-  <text class="label" x="230" y="449" text-anchor="middle">Gemini detects plant, area, location</text>
+  <text class="label" x="230" y="449" text-anchor="middle">OpenRouter reviews the evidence</text>
   <line class="arrow" x1="230" y1="468" x2="230" y2="504"/>
   <polygon points="224,496 236,496 230,508" fill="#0f172a"/>
 

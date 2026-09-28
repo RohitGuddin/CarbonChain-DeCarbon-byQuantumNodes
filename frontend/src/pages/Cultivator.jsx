@@ -115,7 +115,7 @@ const CultivatorDashboard = ({ user }) => {
       }
     } catch (error) {
       console.error('AI analysis error:', error);
-      setMessage(error.message || 'AI analysis failed. Using fallback detection - please try uploading again.');
+      setMessage(error.message || 'Plantation review could not be completed. Upload the photo again.');
     } finally {
       setAiLoading(false);
     }

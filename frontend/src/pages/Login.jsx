@@ -434,7 +434,7 @@ const Login = ({ onLogin }) => {
         <div className="mt-8 opacity-0 pointer-events-none">
           <div className="text-center mb-6">
             <h3 className="text-lg font-semibold text-transparent mb-2">🎯 Quick Access</h3>
-            <p className="text-xs text-transparent">Try the system with demo accounts</p>
+            <p className="text-xs text-transparent">Cultivator and company accounts</p>
           </div>
           <div className="demo-buttons grid grid-cols-1 gap-3">
             {[

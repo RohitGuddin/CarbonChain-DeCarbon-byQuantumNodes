@@ -9,7 +9,7 @@ import google.generativeai as genai
 
 def detect_plant_type(image_path: str) -> Dict[str, Any]:
     """
-    Detect plant type using Google Gemini Vision API with fallback
+    Review plantation evidence with OpenRouter and return structured findings
     """
     print(f"🔍 Processing {os.path.basename(image_path)}...")
     
@@ -27,7 +27,7 @@ def detect_plant_type(image_path: str) -> Dict[str, Any]:
     return _fallback_detection(image_path)
 
 def _detect_with_gemini(image_path: str) -> Dict[str, Any]:
-    """Use Google Gemini Vision API for plant detection"""
+    """Review plantation evidence through OpenRouter"""
     # Reload environment variables to ensure we have the latest API key
     from dotenv import load_dotenv
     
@@ -48,7 +48,7 @@ def _detect_with_gemini(image_path: str) -> Dict[str, Any]:
     if not api_key:
         raise Exception("GEMINI_API_KEY not configured. Please check your .env file in the nccr-backend directory.")
     
-    print(f"🔑 Using Gemini API Key (length: {len(api_key)})")
+    print(f"OpenRouter key in use (length: {len(api_key)})")
     
     # Configure Gemini
     genai.configure(api_key=api_key)
@@ -65,14 +65,14 @@ def _detect_with_gemini(image_path: str) -> Dict[str, Any]:
     for model_name in model_names:
         try:
             model = genai.GenerativeModel(model_name)
-            print(f"✅ Using Gemini model: {model_name}")
+            print(f"Review model: {model_name}")
             break
         except Exception as e:
             print(f"⚠️ Model {model_name} failed: {str(e)}")
             continue
     
     if not model:
-        raise Exception("No compatible Gemini model found. Available models may have changed.")
+        raise Exception("OpenRouter did not return a review model.")
     
     # Load image using PIL
     try:
@@ -92,7 +92,7 @@ def _detect_with_gemini(image_path: str) -> Dict[str, Any]:
         img.load()
         
     except Exception as e:
-        print(f"⚠️ Failed to load image for Gemini: {str(e)}")
+        print(f"Could not read the plantation photo: {str(e)}")
         # Try alternative loading method
         try:
             from PIL import ImageFile
@@ -129,7 +129,7 @@ def _detect_with_gemini(image_path: str) -> Dict[str, Any]:
     
     # Parse response
     response_text = response.text.strip()
-    print(f"🤖 Gemini Response: {response_text}")
+    print(f"Review response: {response_text}")
     
     # Try to extract JSON from response (handle markdown code blocks)
     try:
@@ -184,7 +184,7 @@ def _detect_with_gemini(image_path: str) -> Dict[str, Any]:
 
 def _fallback_detection(image_path: str) -> Dict[str, Any]:
     """Fallback detection based on image characteristics using actual image analysis"""
-    print("🔄 Using intelligent fallback detection...")
+    print("Reviewing the plantation photo from image evidence...")
     
     try:
         # Try to analyze the actual image

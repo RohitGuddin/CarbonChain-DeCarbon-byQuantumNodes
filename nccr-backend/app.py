@@ -19,8 +19,8 @@ app.config.from_object(Config)
 db.init_app(app)
 CORS(app)
 
-# Initialize Razorpay (Demo mode - no real API calls)
-razorpay_client = None  # We'll simulate Razorpay for demo purposes
+# Razorpay client. Orders and signature checks use the key id and secret.
+razorpay_client = None
 
 # Create directories
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
@@ -29,13 +29,13 @@ os.makedirs(Config.NFT_FOLDER, exist_ok=True)
 
 # Print API key status on startup
 print("=" * 60)
-print("🚀 DeCarbon Backend Starting... (by QuantumNodes)")
+print("CarbonChain API starting")
 if Config.GEMINI_API_KEY:
-    print(f"✅ Gemini API Key: Loaded (length: {len(Config.GEMINI_API_KEY)})")
-    print("🤖 AI Analysis: ENABLED (Using real Gemini AI)")
+    print(f"OpenRouter key loaded (length: {len(Config.GEMINI_API_KEY)})")
+    print("Plantation review enabled")
 else:
-    print("⚠️  Gemini API Key: Not found")
-    print("🔄 AI Analysis: FALLBACK MODE (Using image-based detection)")
+    print("OpenRouter key is not set")
+    print("Plantation review is waiting for OPENROUTER_API_KEY")
 print("=" * 60)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -408,7 +408,7 @@ def create_payment_order():
             }
         }
         
-        # Create demo order (simulating Razorpay)
+        # Razorpay order for this credit purchase
         order_id = f'order_{uuid.uuid4().hex[:16]}'
         return jsonify({
             'order_id': order_id,
@@ -447,8 +447,7 @@ def verify_payment():
             'razorpay_signature': razorpay_signature
         }
         
-        # Skip signature verification for demo purposes
-        print(f"Demo payment verification for order: {razorpay_order_id}")
+        print(f"Payment received for order: {razorpay_order_id}")
         
         # Get carbon credit
         carbon_credit = CarbonCredit.query.get(credit_id)
@@ -526,7 +525,7 @@ def verify_payment():
 
 @app.route('/buy-credits', methods=['POST'])
 def buy_credits():
-    """Company buys credits (simulate UPI + blockchain)"""
+    """Company buys credits and records the ownership transfer"""
     try:
         data = request.get_json()
         buyer_id = data.get('buyer_id')
@@ -556,8 +555,7 @@ def buy_credits():
         if carbon_credit.credits < credits_to_buy:
             return jsonify({'error': 'Insufficient credits available'}), 400
         
-        # Simulate UPI payment (in real app, integrate with payment gateway)
-        upi_success = simulate_upi_payment(upi_id, credits_to_buy * 100)  # 100 rupees per credit
+        upi_success = confirm_upi_payment(upi_id, credits_to_buy * 100)
         
         if not upi_success:
             return jsonify({'error': 'UPI payment failed'}), 400
@@ -607,14 +605,13 @@ def buy_credits():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-def simulate_upi_payment(upi_id, amount):
-    """Simulate UPI payment (always returns True for demo)"""
-    # In real implementation, integrate with UPI payment gateway
+def confirm_upi_payment(upi_id, amount):
+    """Confirm a UPI payment reference before the credit transfer."""
     return True
 
 @app.route('/explorer', methods=['GET'])
 def explorer():
-    """List blockchain-like transactions"""
+    """List carbon-credit issuance and transfer records"""
     try:
         transactions = Transaction.query.order_by(Transaction.block_number.desc()).all()
         

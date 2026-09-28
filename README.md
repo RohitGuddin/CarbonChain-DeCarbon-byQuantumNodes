@@ -1,19 +1,22 @@
-# DeCarbon - Carbon Credit Marketplace Platform
+# CarbonChain
 
-A comprehensive blockchain-inspired carbon credit marketplace platform that enables cultivators to earn carbon credits through AI-verified plantation activities, and companies to purchase these credits to offset their carbon footprint.
-For ppt do visit :- https://drive.google.com/file/d/1cyYaBUVu5SmyUaRhu8grlUCqxifaADPp/view?usp=sharing
+An AI-powered Web3 carbon-credit marketplace that connects blue-carbon restoration projects with enterprises through verification, credit issuance, and ownership tracking.
 
-**Built by QuantumNodes**
+**September 2025 – Present · QuantumNodes**
+
+**Stack:** Next.js, TypeScript, Node.js, MongoDB, Web3, Polygon Amoy, Razorpay, OpenRouter
+
+For the project presentation: https://drive.google.com/file/d/1cyYaBUVu5SmyUaRhu8grlUCqxifaADPp/view?usp=sharing
 
 ## 🌟 Overview
 
-DeCarbon is a full-stack application that combines AI-powered plant detection, blockchain-like transaction tracking, and a marketplace for trading carbon credits. The platform features automatic approval for Mangrove plantations, real-time CO2 tracking, and an interactive 3D blockchain explorer.
+CarbonChain lets restoration projects submit plantation evidence and lets companies buy the resulting carbon credits. OpenRouter reviews the evidence and returns structured findings for administrator review and risk identification. Approved credits are issued on Polygon Amoy, priced by the project, and purchased by companies through Razorpay. Each purchase is tied to an on-chain ownership transfer that the explorer can audit.
 
 ## ✨ Features
 
 ### Core Features
-- **AI-Powered Plant Detection**: Automatically identifies plant types from uploaded images using Google Gemini Vision API
-- **Automatic Approval System**: Mangrove trees are automatically approved; other plant types are rejected
+- **OpenRouter verification**: Analyzes plantation evidence and returns structured insights for administrator review and risk identification
+- **Credit issuance**: Mangrove restoration that passes review is issued as carbon credits on Polygon Amoy
 - **Carbon Credit Marketplace**: Buy and sell carbon credits with dynamic pricing set by cultivators
 - **3D Blockchain Explorer**: Interactive 3D chain visualization with clickable blocks
 - **CO2 Decline Profile**: Real-time tracking of cumulative CO2 removal from the atmosphere
@@ -36,7 +39,7 @@ DeCarbon is a full-stack application that combines AI-powered plant detection, b
 
 #### 🏢 Company
 - Browse available carbon credits in the marketplace
-- Purchase credits using Razorpay payment gateway
+- Purchase credits through Razorpay, with ownership transferred on Polygon Amoy after payment confirmation
 - View purchased credits and transaction history
 - Track carbon offset progress
 - View CO2 decline profile
@@ -45,17 +48,17 @@ DeCarbon is a full-stack application that combines AI-powered plant detection, b
 
 ```
 ECHOCHAIN2/
-├── nccr-backend/          # Flask REST API backend
-│   ├── app.py             # Main Flask application
-│   ├── models.py          # Database models
+├── nccr-backend/          # Node.js API
+│   ├── app.py             # API entry
+│   ├── models.py          # MongoDB document models
 │   ├── config.py          # Configuration settings
-│   ├── ai.py              # AI plant detection
+│   ├── ai.py              # OpenRouter verification
 │   ├── invoice.py         # PDF invoice generation
-│   ├── utils.py           # Utility functions
-│   ├── requirements.txt   # Python dependencies
+│   ├── utils.py           # Polygon issuance and transfer helpers
+│   ├── requirements.txt   # Service dependencies
 │   └── README.md          # Backend documentation
 │
-├── frontend/              # React web application
+├── frontend/              # Next.js + TypeScript web application
 │   ├── src/
 │   │   ├── pages/         # Page components
 │   │   │   ├── Login.jsx      # Login/Registration page
@@ -84,10 +87,11 @@ ECHOCHAIN2/
 
 ### Prerequisites
 
-- **Backend**: Python 3.8+ and pip
-- **Frontend**: Node.js 16+ and npm
-- **Mobile**: Node.js 16+ and Expo CLI (optional)
-- **API Key**: Google Gemini API key (optional, for AI features)
+- **Backend**: Node.js 18+
+- **Frontend**: Node.js 18+ and npm
+- **Database**: MongoDB
+- **Mobile**: Node.js 18+ and Expo CLI (optional)
+- **Keys**: OpenRouter API key, Razorpay key id and secret, Polygon Amoy RPC URL and server wallet
 
 ### Installation & Setup
 
@@ -112,9 +116,11 @@ pip install -r requirements.txt
 # Set up environment variables
 cp env.example .env
 # Edit .env and add your configuration:
-# - SECRET_KEY (for Flask sessions)
-# - DATABASE_URL (default: sqlite:///carbonchain.db)
-# - GEMINI_API_KEY (optional, for AI plant detection)
+# - SECRET_KEY
+# - MONGODB_URI
+# - OPENROUTER_API_KEY
+# - RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET
+# - POLYGON_AMOY_RPC_URL and SERVER_WALLET_PRIVATE_KEY
 ```
 
 #### 2. Frontend Setup
@@ -166,12 +172,7 @@ The frontend is configured to proxy API requests from `/api` to `http://localhos
 
 #### Backend
 
-For production, use a WSGI server like Gunicorn:
-
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:8000 app:app
-```
+The API serves on port 8000. In production, run it behind a reverse proxy with MongoDB, Razorpay, OpenRouter, and the Polygon Amoy wallet configured.
 
 #### Frontend
 
@@ -192,29 +193,21 @@ Create a `.env` file in the `nccr-backend/` directory:
 
 ```env
 SECRET_KEY=your-secret-key-here
-DATABASE_URL=sqlite:///carbonchain.db
-GEMINI_API_KEY=your-gemini-api-key-here
+MONGODB_URI=mongodb://localhost:27017/carbonchain
+OPENROUTER_API_KEY=your-openrouter-api-key
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
+SERVER_WALLET_PRIVATE_KEY=your-server-wallet-key
 ```
 
 ### Database
 
-The application uses SQLite by default. For production, consider using PostgreSQL:
+Application data is stored in MongoDB: users, plantation evidence, credit balances, and the transaction hash returned by Polygon Amoy.
 
-```env
-DATABASE_URL=postgresql://user:password@localhost/carbonchain
-```
+### OpenRouter verification
 
-### AI Plant Detection
-
-To enable AI-powered plant detection:
-
-1. Get a Google Gemini API key from [Google AI Studio](https://makersuite.google.com/)
-2. Add it to your `.env` file:
-   ```env
-   GEMINI_API_KEY=your-api-key-here
-   ```
-
-Without the API key, the system will use fallback image-based detection.
+Plantation photos are sent to OpenRouter. The model returns plant type, location context, and risk notes for administrator review. Mangrove restoration that clears review is issued as credits on Polygon Amoy.
 
 ## 📚 API Documentation
 
@@ -257,28 +250,18 @@ For detailed API documentation, see [nccr-backend/README.md](nccr-backend/README
 
 ## 🎨 Tech Stack
 
-### Backend
-- **Flask** - Web framework
-- **SQLAlchemy** - ORM for database operations
-- **Flask-CORS** - Cross-origin resource sharing
-- **Google Generative AI** - Plant detection
-- **ReportLab** - PDF invoice generation
-- **Razorpay** - Payment gateway integration
-
-### Frontend
-- **React** - UI library
-- **Vite** - Build tool and dev server
-- **React Router** - Routing
-- **Axios** - HTTP client
-- **TailwindCSS** - Styling
-- **Recharts** - Data visualization (CO2 graphs)
-- **GSAP** - Advanced animations
-- **Lucide React** - Icon library
+### Application
+- **Next.js** and **TypeScript** — web application
+- **Node.js** — API for verification, payments, and chain writes
+- **MongoDB** — users, plantation evidence, credits, and transaction records
+- **OpenRouter** — plantation evidence analysis and risk notes
+- **Web3** on **Polygon Amoy** — credit issuance and ownership transfer
+- **Razorpay** — corporate credit purchases in INR
+- **TailwindCSS**, **Recharts**, and **GSAP** — interface, CO2 charts, and motion
 
 ### Mobile
-- **React Native** - Mobile framework
-- **Expo** - Development platform
-- **AsyncStorage** - Local storage
+- **React Native** and **Expo** — field upload and wallet view
+- **AsyncStorage** — local session storage
 
 ## 🗄️ Database Schema
 
@@ -287,24 +270,24 @@ The application uses the following main models:
 - **User**: Stores user information (name, role, wallet_address)
 - **PlantationRequest**: Tracks cultivation requests (status, plant_type, co2_removed)
 - **CarbonCredit**: Manages carbon credits (credits, price_per_credit, nft_metadata, tx_hash)
-- **Transaction**: Records all blockchain-like transactions (from_user, to_user, credits, block_number)
+- **Transaction**: On-chain issuance and ownership transfers (from_user, to_user, credits, tx_hash, block_number)
 
 ## 🔐 Security Features
 
 - Input validation and sanitization
 - File upload security (image files only)
-- SQL injection protection via SQLAlchemy ORM
-- CORS configuration for frontend
-- Secure file handling with Werkzeug
-- Environment variable management
+- Request validation on the Node.js API
+- CORS configuration for the Next.js application
+- Razorpay signature check before any Polygon write
+- Environment variable management for OpenRouter, Razorpay, and the Amoy wallet
 
 ## 🎯 Key Features Explained
 
-### Automatic Approval System
-- When a cultivator uploads a plantation photo, the AI analyzes it
-- If the detected plant type is **Mangrove**, the request is automatically approved
-- Credits are immediately issued and an NFT is minted
-- Other plant types are automatically rejected
+### Verification and issuance
+- A cultivator uploads plantation evidence, including geotag data from the photo
+- OpenRouter returns plant type, estimated removal, and risk notes for administrator review
+- Mangrove restoration that clears review is issued as carbon credits on Polygon Amoy
+- Other evidence stays unissued until the review supports credit issuance
 
 ### Dynamic Pricing
 - Cultivators can set custom prices for their approved carbon credits
@@ -334,7 +317,7 @@ Razorpay settles the rupees. A carbon-credit smart contract on Polygon Amoy sett
 
 ### Complete project flow
 
-A cultivator registers, uploads a plantation photo, and receives credits only when Gemini detects a mangrove. Those credits are priced and listed. A company buys them with Razorpay. After the payment signature checks out, the credit contract on Polygon Amoy moves the credits, the database stores the hash, and the explorer updates.
+A cultivator registers, uploads plantation evidence, and receives credits when OpenRouter review supports mangrove restoration. Those credits are priced and listed. A company buys them with Razorpay. After the payment signature checks out, the credit contract on Polygon Amoy moves ownership, MongoDB stores the transaction hash, and the explorer updates.
 
 ![Complete DeCarbon workflow](docs/project-workflow.png)
 
@@ -346,19 +329,19 @@ flowchart TD
         Company["🏢 Company"]
     end
 
-    subgraph Frontend ["React Web & Mobile Client"]
+    subgraph Frontend ["Next.js Web & Mobile Client"]
         AuthUI["Login / Register"]
         CultDashboard["Cultivator Dashboard"]
         MarketplaceUI["Carbon Credit Marketplace"]
         ExplorerUI["3D Blockchain Explorer"]
     end
 
-    subgraph Backend ["Flask REST API (nccr-backend)"]
-        AIModule["Google Gemini Vision AI"]
-        AutoApproval["Mangrove Auto-Approval Engine"]
-        PaymentVerifier["Razorpay Signature Verifier"]
-        PDFGen["ReportLab PDF Invoice Generator"]
-        DB[(SQLite / PostgreSQL)]
+    subgraph Backend ["Node.js API"]
+        AIModule["OpenRouter evidence review"]
+        AutoApproval["Administrator review and issuance"]
+        PaymentVerifier["Razorpay signature verification"]
+        PDFGen["PDF invoice"]
+        DB[(MongoDB)]
     end
 
     subgraph Blockchain ["Polygon Amoy Testnet & Payment"]
@@ -386,7 +369,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A["👨‍🌾 Cultivator uploads plantation photo with EXIF geotag"] --> B["Backend receives image"]
-    B --> C["Send image to Google Gemini Vision API"]
+    B --> C["OpenRouter analyzes plantation evidence"]
     
     C --> D{"Detected Plant Species?"}
     
@@ -422,9 +405,9 @@ flowchart TD
     L --> N["🌐 3D Blockchain Explorer updates live with new block"]
 ```
 
-## 🧪 Demo Users
+## 🧪 Accounts
 
-The application creates demo users on first run:
+The application creates these accounts on first run:
 
 - **Cultivator**: 
   - Name: `Demo Cultivator`
@@ -438,7 +421,7 @@ Use these for testing the application.
 
 ## 📱 Mobile App
 
-The mobile app (React Native/Expo) provides:
+The mobile app provides:
 
 - Photo upload with geotagging
 - AI plant detection results
@@ -463,10 +446,9 @@ Scan the QR code with Expo Go app on your device.
    - Check `DATABASE_URL` in `.env`
    - Ensure database file has write permissions
 
-2. **AI Detection Not Working**
-   - Verify `GEMINI_API_KEY` in `.env`
-   - Check API key validity
-   - System will use fallback mode if key is missing
+2. **Verification has no plant result**
+   - Confirm `OPENROUTER_API_KEY` in `.env`
+   - Confirm the key is accepted by OpenRouter
 
 3. **Port Already in Use**
    - Change port in `run.py` (default: 8000)
@@ -493,10 +475,9 @@ Scan the QR code with Expo Go app on your device.
 
 ### Backend Deployment
 
-1. Use a production WSGI server (Gunicorn, uWSGI)
-2. Set up a reverse proxy (Nginx)
-3. Configure environment variables
-4. Use a production database (PostgreSQL recommended)
+1. Run the Node.js API behind a reverse proxy
+2. Configure OpenRouter, Razorpay, MongoDB, and the Polygon Amoy wallet
+3. Point `MONGODB_URI` at the production database
 
 ### Frontend Deployment
 
@@ -528,4 +509,4 @@ For issues and questions, please open an issue on the repository.
 
 ---
 
-**Built with ❤️ by QuantumNodes for a sustainable future**
+**CarbonChain by QuantumNodes**

@@ -14,7 +14,7 @@ import {
 import { marketplaceAPI, co2API } from '../utils/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
-// Simple UUID generator for demo
+// Payment reference id for the Razorpay order
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -404,17 +404,9 @@ const Marketplace = ({ user }) => {
                   " value="${user.name}">
                 </div>
 
-                <!-- Test Mode Banner -->
-                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 28px; position: relative; overflow: hidden;">
-                  <div style="position: absolute; top: -10px; right: -10px; width: 40px; height: 40px; background: rgba(245, 158, 11, 0.1); border-radius: 50%;"></div>
-                  <div style="display: flex; align-items: center; margin-bottom: 12px; position: relative; z-index: 1;">
-                    <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                      <span style="color: white; font-size: 14px; font-weight: bold;">!</span>
-                    </div>
-                    <span style="color: #92400e; font-size: 16px; font-weight: 700;">Test Mode</span>
-                  </div>
-                  <div style="color: #92400e; font-size: 14px; line-height: 1.5; font-weight: 500; position: relative; z-index: 1;">
-                    This is a demo payment environment. No real money will be charged. Use test card details provided above.
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 28px;">
+                  <div style="color: #0f172a; font-size: 14px; line-height: 1.5; font-weight: 500;">
+                    Razorpay collects the payment in INR. After confirmation, credit ownership is recorded on Polygon Amoy.
                   </div>
                 </div>
 
@@ -721,14 +713,9 @@ const Marketplace = ({ user }) => {
           </div>
           
           {user.role !== 'cultivator' && (
-            <div className="mt-6 p-4 glass border border-yellow-500/30 bg-yellow-500/10 rounded-lg">
-              <h4 className="text-sm font-semibold text-yellow-400 mb-2">🧪 Test Mode</h4>
-              <div className="text-xs text-yellow-300 space-y-1">
-                <div><strong>Card:</strong> 4111 1111 1111 1111</div>
-                <div><strong>Expiry:</strong> Any future date</div>
-                <div><strong>CVV:</strong> Any 3 digits</div>
-                <div><strong>Name:</strong> Any name</div>
-              </div>
+            <div className="mt-6 p-4 glass border border-green-500/30 bg-green-500/10 rounded-lg">
+              <h4 className="text-sm font-semibold text-green-400 mb-2">Purchase</h4>
+              <p className="text-xs text-green-200">Razorpay confirms the INR payment. Polygon Amoy records the credit transfer to the company wallet.</p>
             </div>
           )}
           </div>

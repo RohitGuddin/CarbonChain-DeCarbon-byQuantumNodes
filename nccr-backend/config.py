@@ -17,12 +17,12 @@ class Config:
     INVOICE_FOLDER = 'invoices'
     NFT_FOLDER = 'nfts'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+    GEMINI_API_KEY = os.environ.get('OPENROUTER_API_KEY') or os.environ.get('GEMINI_API_KEY')
     
     # Debug: Print API key status (without exposing the full key)
     @staticmethod
     def get_gemini_key_status():
-        key = os.environ.get('GEMINI_API_KEY')
+        key = os.environ.get('OPENROUTER_API_KEY') or os.environ.get('GEMINI_API_KEY')
         if key:
             return f"✅ API Key loaded (length: {len(key)}, starts with: {key[:10]}...)"
         return "❌ API Key not found"
